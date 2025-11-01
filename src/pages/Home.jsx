@@ -2,10 +2,11 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import TypingText from "@/components/TypingText"; 
-import { Camera, Video, Mic, HeartHandshake, Zap, Shield, Search, TrendingUp, X, CheckCircle, ArrowRight } from "lucide-react";
+import { Camera, Video, Mic, HeartHandshake, Zap, Shield, Search, TrendingUp, X, CheckCircle, ArrowRight, Star, Quote } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// Data derived from the "MediaHub Rwanda: Booking Creatives with Confidence" document
+// --- DATA: New Data Blocks ---
+
 const coreProblems = [
     { title: "Unreliable Bookings", icon: X, description: "High risk of cancellations or no-shows due to informal agreements.", color: "text-red-400" },
     { title: "Unpredictable Quality", icon: TrendingUp, description: "Inconsistent quality of final deliverables and portfolio verification.", color: "text-red-400" },
@@ -13,15 +14,28 @@ const coreProblems = [
 ];
 
 const coreServices = [
-    { title: "Photography", icon: Camera, description: "Weddings, events, and commercial studio shoots." },
-    { title: "Videography", icon: Video, description: "Film production, documentaries, and corporate videos." },
-    { title: "Audio Production", icon: Mic, description: "Sound design, music recording, and voice-overs." },
-    { title: "Graphics & Design", icon: Zap, description: "Branding, logos, and digital marketing materials." },
+    { id: 1, title: "Photography", icon: Camera, description: "Weddings, events, and commercial studio shoots." },
+    { id: 2, title: "Videography", icon: Video, description: "Film production, documentaries, and corporate videos." },
+    { id: 3, title: "Audio Production", icon: Mic, description: "Sound design, music recording, and voice-overs." },
+    { id: 4, title: "Graphics & Design", icon: Zap, description: "Branding, logos, and digital marketing materials." },
 ];
+
+const testimonials = [
+    { quote: "MediaHub eliminated all the headaches of hiring. Found a verified videographer in minutes, and the payment escrow gave me total peace of mind. Truly professional!", name: "Jean-Claude B.", city: "Kigali" },
+    { quote: "The best directory for quality creatives in Rwanda. The portfolio check feature meant I didn't waste time sifting through unproven profiles. Highly recommended!", name: "Sarah N.", city: "Remera" },
+    { quote: "As a client who values reliability, MediaHub is a game-changer. The formal booking agreement ensured my event photographer was on time and delivered high-quality work.", name: "Isabelle M.", city: "Gisenyi" },
+];
+
+const featuredCreatives = [
+    { name: "Alpha Visuals", category: "Videography", rating: 5.0, bookings: "100+", profileLink: "/profile/alpha" },
+    { name: "Kreative Designs", category: "Graphics", rating: 4.9, bookings: "85+", profileLink: "/profile/kreative" },
+    { name: "Sound Masters", category: "Audio Production", rating: 4.8, bookings: "60+", profileLink: "/profile/sound" },
+];
+
+// --- Component Start ---
 
 export function Home() {
   return (
-    // Reusing the attractive background with its animation class
     <div className="bg-gray-900 text-white min-h-screen bg-abstract-motion animate-abstract-move">
       <div className="container mx-auto px-4 py-12 md:py-20">
         
@@ -30,7 +44,6 @@ export function Home() {
             
             <h1 className="text-5xl sm:text-7xl lg:text-8xl font-extrabold text-white leading-snug mb-6">
                 Transforming Rwanda's <span className="text-amber-500 block">
-                    {/* The most prominent typing effect */}
                     <TypingText 
                         text="Creative Services" 
                         typingSpeed={100} 
@@ -109,7 +122,69 @@ export function Home() {
             </div>
         </section>
 
-        {/* --- 3. Service Showcase Grid (Animated) --- */}
+        {/* --- 3. Client Testimonials Section --- */}
+        <section className="mb-24">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-white text-center mb-12">
+                What Our Clients Say
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {testimonials.map((review, index) => (
+                    <Card 
+                        key={index} 
+                        className="bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-amber-500/50 
+                                   transition-transform duration-300 hover:scale-[1.03]"
+                    >
+                        <CardContent className="p-0">
+                            <Quote className="h-8 w-8 text-amber-500 mb-4 opacity-70" />
+                            <p className="italic text-lg text-gray-300 mb-4">"{review.quote}"</p>
+                            <div className="text-right">
+                                <p className="font-semibold text-white">— {review.name}</p>
+                                <p className="text-sm text-amber-500">{review.city}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </section>
+
+        {/* --- 4. Top-Rated Creatives Showcase --- */}
+        <section className="mb-24">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-white text-center mb-12">
+                Book The <span className="text-amber-500">Highest Rated</span> Talent
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {featuredCreatives.map((creative, index) => (
+                    <Link to={creative.profileLink} key={index}>
+                        <Card 
+                            className="bg-gray-800 p-6 rounded-xl border border-amber-500/50 shadow-xl 
+                                       transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/20"
+                        >
+                            <CardHeader className="flex flex-row items-center justify-between p-0 mb-4">
+                                <CardTitle className="text-2xl font-bold text-white hover:text-amber-500">{creative.name}</CardTitle>
+                                <div className="flex items-center space-x-1">
+                                    <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
+                                    <span className="text-xl font-semibold text-amber-400">{creative.rating}</span>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <p className="text-gray-400 mb-2">{creative.category} Specialist</p>
+                                <p className="text-sm text-gray-500">Completed: **{creative.bookings}**</p>
+                                <Button className="mt-4 w-full bg-amber-500 text-gray-900 hover:bg-amber-400">View Profile</Button>
+                            </CardContent>
+                        </Card>
+                    </Link>
+                ))}
+            </div>
+            <div className="text-center mt-12">
+                <Link to="/services">
+                    <Button className="bg-gray-700 text-white hover:bg-gray-600 text-lg py-6 px-8 transition-colors">
+                        Explore All 100+ Creatives
+                    </Button>
+                </Link>
+            </div>
+        </section>
+
+        {/* --- 5. Service Showcase Grid (Moved to last) --- */}
         <section className="mb-20 text-center">
             <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-12">
                 Explore Our Core <span className="text-amber-500">Service Categories</span>
@@ -117,7 +192,7 @@ export function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {coreServices.map((service, index) => (
                     <Card 
-                        key={index} 
+                        key={service.id} 
                         className="bg-gray-800 border-amber-500/50 shadow-xl shadow-amber-500/10 
                                    transition-all duration-500 hover:scale-[1.05] 
                                    transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-amber-500/30"
@@ -132,12 +207,6 @@ export function Home() {
                     </Card>
                 ))}
             </div>
-            
-            <Link to="/services">
-                <Button className="mt-12 bg-gray-700 text-white hover:bg-gray-600 text-lg py-6 px-8 transition-colors">
-                    View All Categories
-                </Button>
-            </Link>
         </section>
 
       </div>
