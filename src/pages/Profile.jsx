@@ -39,7 +39,8 @@ export function Profile() {
     };
 
     return (
-        <div className="bg-gray-900 text-white min-h-screen">
+        // UPDATED: Added bg-abstract-motion and animate-abstract-move
+        <div className="bg-gray-900 text-white min-h-screen overflow-x-hidden bg-abstract-motion animate-abstract-move">
             <div className="mx-auto max-w-5xl px-8 py-12 md:py-16">
                 
                 <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4">
@@ -72,7 +73,7 @@ export function Profile() {
                                 <Textarea id="bio" rows={4} placeholder="Describe your experience, style, and what you specialize in." className="bg-gray-900 border-gray-600 text-white" required />
                             </div>
 
-                            {/* Contact Details */}
+                            {/* Contact Details Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                     <Label htmlFor="phone" className="text-white mb-2 flex items-center"><Phone className="h-4 w-4 mr-1 text-gray-400" /> Phone</Label>
