@@ -8,6 +8,7 @@ import { Home } from './pages/Home';
 import { FindServices } from './pages/FindServices';
 import { About } from './pages/About';
 import { Contact } from './pages/Contact';
+import { Footer } from './components/Footer'; // <--- Import it
 
 function App() {
   return (
@@ -25,6 +26,8 @@ function App() {
           {/* <Route path="/profile" element={<Profile />} /> */}
         </Routes>
       </main>
+      
+      <Footer />
       
       {/* Footer component will go here later */}
     </div>
