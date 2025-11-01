@@ -1,35 +1,51 @@
 // src/pages/Contact.jsx
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Mail, Phone, MapPin } from "lucide-react";
+import TypingText from "@/components/TypingText"; 
 
 export function Contact() {
+  
+  // Debugging Checkpoint (You can remove this line once satisfied)
+  useEffect(() => {
+    console.log("MediaHub Contact Page Mounted.");
+  }, []);
+  
   // Simple handler for front-end feedback
   const handleSubmit = (e) => {
     e.preventDefault();
     alert("Thank you for your message! We will be in touch shortly.");
-    // NOTE: In a real app, replace this alert with actual API submission logic.
+    // NOTE: Replace alert with actual form submission logic (e.g., fetch API call)
   };
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen">
-      <div className="container mx-auto px-4 py-12 md:py-20">
+    // Applied the custom background class with animation utility
+    <div className="bg-gray-900 text-white min-h-screen bg-abstract-motion animate-abstract-move">
+      {/* Set wide container (max-w-6xl) for side spacing */}
+      <div className="mx-auto max-w-6xl px-6 py-12 md:py-20"> 
         
         <div className="text-center mb-16 max-w-3xl mx-auto">
+            {/* Typing Effect on the H1 Title */}
             <h1 className="text-4xl md:text-6xl font-extrabold text-amber-500 mb-4">
-                Get In Touch
+                <TypingText 
+                    text="Get In Touch" 
+                    typingSpeed={120} 
+                    repeatDelay={5000} 
+                />
             </h1>
             <p className="text-xl text-gray-400">
                 Have a question about booking, listing your service, or a partnership inquiry? We're here to help.
             </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+        {/* items-stretch ensures the cards maintain equal height (h-full) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-stretch"> 
             
-            {/* --- 1. Contact Form --- */}
-            <div className="lg:col-span-2 bg-gray-800 p-8 rounded-xl shadow-2xl border border-gray-700">
+            {/* --- 1. Contact Form (Spans 2/3 width) --- */}
+            <div className="lg:col-span-2 bg-gray-800 p-8 rounded-xl shadow-2xl border border-gray-700 h-full"> 
                 <h2 className="text-3xl font-bold text-white mb-6">Send Us a Message</h2>
                 
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -60,8 +76,8 @@ export function Contact() {
                 </form>
             </div>
 
-            {/* --- 2. Direct Contact Info --- */}
-            <div className="bg-gray-900 p-8 rounded-xl border border-amber-500/50 shadow-xl shadow-amber-500/10 h-fit">
+            {/* --- 2. Direct Contact Info (Fills remaining 1/3 width, h-full for equal height) --- */}
+            <div className="bg-gray-900 p-8 rounded-xl border border-amber-500/50 shadow-xl shadow-amber-500/10 h-full">
                 <h2 className="text-2xl font-bold text-white mb-6">Direct Information</h2>
                 
                 <div className="space-y-6">
