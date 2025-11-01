@@ -2,22 +2,22 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import TypingText from "@/components/TypingText";
-import { Camera, Video, Mic, HeartHandshake, Zap, Shield, Search, TrendingUp, X, CheckCircle, ArrowRight, Star, Quote, Rocket } from "lucide-react";
+import { Camera, Video, Mic, HeartHandshake, Zap, Shield, Search, TrendingUp, X, CheckCircle, ArrowRight, Star, Quote, Rocket, User } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 
-// --- DATA BLOCKS (UPDATED) ---
+// --- DATA BLOCKS (Unchanged) ---
 const coreProblems = [
   { title: "Unreliable Bookings", icon: X, description: "High risk of cancellations or no-shows due to informal agreements.", color: "text-red-400" },
   { title: "Unpredictable Quality", icon: TrendingUp, description: "Inconsistent quality of final deliverables and portfolio verification.", color: "text-red-400" },
   { title: "Lack of Trust", icon: HeartHandshake, description: "Difficulty verifying a provider's true skills and professional background.", color: "text-red-400" },
-  // --- NEW PROBLEM ADDED ---
   {
     title: "No Consequence for Unprofessionalism",
     icon: X,
     description: (
       <>
-        The current informal market lacks a <span className="font-bold" >structured review and penalty system</span>. Without a public,
-        searchable reputation, there are <span className="font-bold" >no professional repercussions</span> for poor service or no-shows,
+        The current informal market lacks a <span className="font-bold">structured review and penalty system</span>. Without a public,
+        searchable reputation, there are <span className="font-bold">no professional repercussions</span> for poor service or no-shows,
         making every new booking a high-risk gamble for the client.
       </>
     ),
@@ -42,6 +42,7 @@ const featuredCreatives = [
   { name: "Alpha Visuals", category: "Videography", rating: 5.0, bookings: "100+", profileLink: "/profile/alpha" },
   { name: "Kreative Designs", category: "Graphics", rating: 4.9, bookings: "85+", profileLink: "/profile/kreative" },
   { name: "Sound Masters", category: "Audio Production", rating: 4.8, bookings: "60+", profileLink: "/profile/sound" },
+  { name: "Event Snaps", category: "Photography", rating: 4.7, bookings: "120+", profileLink: "/profile/eventsnaps" },
 ];
 
 // --- Component Start ---
@@ -64,8 +65,8 @@ export function Home() {
             </span>
           </h1>
 
-          <p className="text-2xl md:text-2xl text-gray-400 mb-10 max-w-4xl mx-auto">
-            The centralized platform where you can <span className="font-bold" >Book Creatives with Confidence.</span>
+          <p className="text-2xl md:text-3xl text-gray-400 mb-10 max-w-4xl mx-auto">
+            The centralized platform where you can **Book Creatives with Confidence.**
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-8">
@@ -82,10 +83,10 @@ export function Home() {
           </div>
         </section>
 
-        {/* --- 2. Staggered Problem & Solution Callout (4 points each) --- */}
+        {/* --- 2. Staggered Problem & Solution Callout (Unchanged) --- */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-24 items-start">
 
-          {/* The Problems Column (Now 4 items) */}
+          {/* ... Problems Column ... */}
           <div className="bg-gray-800 p-8 rounded-xl shadow-2xl border-t-4 border-red-500 transition-all duration-500 hover:shadow-red-500/10">
             <h2 className="text-3xl font-extrabold text-white mb-6 flex items-center">
               <X className="h-7 w-7 text-red-500 mr-3" /> The Challenges We Eliminate
@@ -103,7 +104,7 @@ export function Home() {
             </div>
           </div>
 
-          {/* The Solution Column (Now 4 items for symmetry) */}
+          {/* ... Solution Column ... */}
           <div className="bg-gray-800 p-8 rounded-xl shadow-2xl border-t-4 border-amber-500 transition-all duration-500 hover:shadow-amber-500/20">
             <h2 className="text-3xl font-extrabold text-white mb-6 flex items-center">
               <CheckCircle className="h-7 w-7 text-amber-500 mr-3" /> Our Reliable Guarantees
@@ -130,7 +131,6 @@ export function Home() {
                   <p className="text-gray-400 text-base">Rigorously checked portfolios ensure you only work with proven professionals.</p>
                 </div>
               </div>
-              {/* --- NEW SOLUTION ADDED --- */}
               <div className="flex items-start space-x-4">
                 <HeartHandshake className="h-6 w-6 text-amber-500 flex-shrink-0 mt-1" />
                 <div>
@@ -142,8 +142,9 @@ export function Home() {
           </div>
         </section>
 
-        {/* --- NEW SECTION 3: Image & Text Row (Unchanged) --- */}
+        {/* --- 3. Image & Text Row (Unchanged) --- */}
         <section className="mb-24 bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-700">
+          {/* ... Content ... */}
           <div className="grid grid-cols-1 lg:grid-cols-2">
             <div className="relative h-64 lg:h-auto bg-amber-900/40 flex items-center justify-center p-12">
               <Rocket className="w-24 h-24 text-amber-500 animate-bounce" />
@@ -166,7 +167,7 @@ export function Home() {
           </div>
         </section>
 
-        {/* --- SECTION 4: Client Testimonials Section (Unchanged) --- */}
+        {/* --- 4. Client Testimonials Section (Unchanged) --- */}
         <section className="mb-24">
           <h2 className="text-4xl font-extrabold text-white text-center mb-12">
             What Our Clients Say
@@ -191,34 +192,66 @@ export function Home() {
           </div>
         </section>
 
-        {/* --- SECTION 5: Top-Rated Creatives Showcase (Unchanged) --- */}
+        {/* --- 5. Top-Rated Creatives Showcase (ADDED SLIDE-IN ANIMATION) --- */}
         <section className="mb-24">
           <h2 className="text-4xl font-extrabold text-white text-center mb-12">
             Book The <span className="text-amber-500">Highest Rated</span> Talent
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {featuredCreatives.map((creative, index) => (
-              <Link to={creative.profileLink} key={index}>
-                <Card
-                  className="bg-gray-800 p-6 rounded-xl border border-amber-500/50 shadow-xl 
-                                       transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/20"
+
+          {/* 🚨 CAROUSEL START */}
+          <Carousel
+            // Settings for carousel (e.g., starts aligned to the left item)
+            opts={{
+              align: "start",
+            }}
+            className="w-full max-w-5xl mx-auto" // Centers the entire carousel container
+          >
+            {/* -ml-4 is a common trick to handle padding/gap inside the carousel */}
+            <CarouselContent className="-ml-4">
+              {featuredCreatives.map((creative, index) => (
+                <CarouselItem
+                  key={index}
+                  // Defines card width: full on mobile, half on MD, third on LG
+                  className="pl-4 basis-full md:basis-1/2 lg:basis-1/3"
                 >
-                  <CardHeader className="flex flex-row items-center justify-between p-0 mb-4">
-                    <CardTitle className="text-xl font-bold text-white hover:text-amber-500">{creative.name}</CardTitle>
-                    <div className="flex items-center space-x-1">
-                      <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
-                      <span className="text-lg font-semibold text-amber-400">{creative.rating}</span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <p className="text-gray-400 text-base mb-2">{creative.category} Specialist</p>
-                    <p className="text-sm text-gray-500">Completed: **{creative.bookings}**</p>
-                    <Button className="mt-4 w-full bg-amber-500 text-gray-900 hover:bg-amber-400 py-5 text-base">View Profile</Button>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
+                  <Link to={creative.profileLink}>
+                    {/* CARD DESIGN REMAINS THE SAME */}
+                    <Card
+                      className="bg-gray-800 p-6 rounded-xl border border-amber-500/50 shadow-xl 
+                                               transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/20 text-center h-full"
+                    >
+                      {/* Card Header contains Title and Rating (Text First) */}
+                      <CardHeader className="p-0 mb-4">
+                        <CardTitle className="text-xl font-bold text-white hover:text-amber-500 mb-2">{creative.name}</CardTitle>
+                        <div className="flex items-center justify-center space-x-1">
+                          <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
+                          <span className="text-lg font-semibold text-amber-400">{creative.rating}</span>
+                        </div>
+                      </CardHeader>
+
+                      {/* --- PROFILE PICTURE/LOGO PLACEHOLDER (Moved & Enlarged) --- */}
+                      <div className="flex justify-center mb-6">
+                        <div className="h-20 w-20 rounded-full bg-gray-700 border-2 border-amber-500 flex items-center justify-center">
+                          <User className="h-10 w-10 text-amber-500" />
+                        </div>
+                      </div>
+
+                      <CardContent className="p-0">
+                        <p className="text-gray-400 text-base mb-2">{creative.category} Specialist</p>
+                        <p className="text-sm text-gray-500">Completed: **{creative.bookings}**</p>
+                        <Button className="mt-4 w-full bg-amber-500 text-gray-900 hover:bg-amber-400 py-5 text-base">View Profile</Button>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            {/* Carousel Navigation Buttons */}
+            <CarouselPrevious className="left-0 hidden md:flex" />
+            <CarouselNext className="right-0 hidden md:flex" />
+          </Carousel>
+          {/* 🚨 CAROUSEL END */}
+
           <div className="text-center mt-12">
             <Link to="/services">
               <Button className="bg-gray-700 text-white hover:bg-gray-600 text-lg py-6 px-8 transition-colors">
@@ -228,7 +261,7 @@ export function Home() {
           </div>
         </section>
 
-        {/* --- SECTION 6: Service Showcase Grid (Unchanged) --- */}
+        {/* --- 6. Service Showcase Grid (Unchanged) --- */}
         <section className="mb-20 text-center">
           <h2 className="text-4xl font-extrabold text-white mb-12">
             Explore Our Core <span className="text-amber-500">Service Categories</span>
