@@ -11,8 +11,8 @@ import { Star, Filter, Search, User, CheckCircle, ArrowLeft, ArrowRight } from "
 const CATEGORIES = ['Photography', 'Videography', 'Audio Production', 'Graphics & Design', 'Web Development'];
 const PRICE_LEVELS = ['$', '$$', '$$$'];
 
-// Generates 15 mock creatives for the first page
-const MOCK_CREATIVES = Array.from({ length: 15 }, (_, i) => ({
+// Generates 16 mock creatives (to better test the 4-per-row layout)
+const MOCK_CREATIVES = Array.from({ length: 16 }, (_, i) => ({
     id: i + 1,
     name: `Creative Studio ${i + 1}`,
     category: CATEGORIES[i % CATEGORIES.length],
@@ -26,6 +26,7 @@ const MOCK_CREATIVES = Array.from({ length: 15 }, (_, i) => ({
 
 function FiltersPanel() {
     return (
+        // Sticky top-20 keeps the filter panel visible as the user scrolls the results
         <div className="p-4 bg-gray-800 rounded-xl shadow-xl border border-gray-700 sticky top-20">
             <h2 className="text-2xl font-bold text-amber-500 mb-6 flex items-center">
                 <Filter className="h-6 w-6 mr-2" /> Filters
@@ -69,7 +70,7 @@ function FiltersPanel() {
                 </div>
             </div>
 
-            {/* Price Range (Using a Slider for illustration) */}
+            {/* Price Range */}
             <div className="mb-6 pb-4 border-b border-gray-700">
                 <h3 className="text-lg font-semibold text-white mb-4">Hourly Rate (RWF)</h3>
                 <Slider 
@@ -99,7 +100,7 @@ function FiltersPanel() {
     );
 }
 
-// --- 2. Service Card Component ---
+// --- 2. Service Card Component (ULTRA COMPACT FINAL DESIGN) ---
 
 function ServiceCard({ creative }) {
     return (
@@ -107,39 +108,49 @@ function ServiceCard({ creative }) {
             className="bg-gray-800 rounded-xl border border-gray-700 hover:border-amber-500/50 
                        transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/20 h-full flex flex-col"
         >
-            {/* Header/Logo */}
-            <CardHeader className="p-4 flex flex-row items-center justify-between border-b border-gray-700">
-                <div className="flex items-center space-x-3">
-                    <div className="h-10 w-10 rounded-full bg-gray-700 border border-amber-500 flex items-center justify-center flex-shrink-0">
-                        <User className="h-5 w-5 text-amber-500" />
+            {/* Header/Logo (Compact) */}
+            <CardHeader className="p-3 flex flex-row items-center justify-between border-b border-gray-700">
+                <div className="flex items-center space-x-2">
+                    {/* Icon kept small */}
+                    <div className="h-8 w-8 rounded-full bg-gray-700 border border-amber-500 flex items-center justify-center flex-shrink-0">
+                        <User className="h-4 w-4 text-amber-500" />
                     </div>
                     <div>
-                        <CardTitle className="text-lg font-bold text-white leading-tight">
+                        {/* Name: text-sm */}
+                        <CardTitle className="text-sm font-bold text-white leading-tight">
                             {creative.name}
                         </CardTitle>
-                        <p className="text-sm text-gray-400">{creative.category}</p>
+                        {/* Category: text-xs */}
+                        <p className="text-xs text-gray-400">{creative.category}</p>
                     </div>
                 </div>
                 {creative.isVerified && (
-                    <CheckCircle className="h-5 w-5 text-green-500" title="MediaHub Verified" />
+                    <CheckCircle className="h-4 w-4 text-green-500" title="MediaHub Verified" />
                 )}
             </CardHeader>
 
-            {/* Content */}
-            <CardContent className="p-4 flex-grow flex flex-col justify-between">
-                <div>
-                    <div className="flex items-center space-x-1 mb-2">
-                        <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
-                        <span className="text-base font-semibold text-amber-400">{creative.rating}</span>
-                        <span className="text-sm text-gray-500">({creative.bookings} done)</span>
+            {/* Content (Ultra-Compact) */}
+            <CardContent className="p-3 flex-grow flex flex-col justify-between">
+                <div className="flex justify-between items-center mb-3">
+                    {/* Rating Section (Compact) */}
+                    <div className="flex items-center space-x-1">
+                        <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+                        <span className="text-sm font-semibold text-amber-400">{creative.rating}</span>
+                        <span className="text-xs text-gray-500">({creative.bookings} done)</span>
                     </div>
-                    <p className="text-lg font-bold text-white mb-4">
-                        Starting at {creative.priceLevel}
+                    
+                    {/* Price Level (Compact) */}
+                    <p className="text-sm font-bold text-white">
+                        {creative.priceLevel}
                     </p>
                 </div>
                 
-                <Button className="w-full bg-amber-500 text-gray-900 hover:bg-amber-400 font-bold mt-auto">
-                    View Profile & Packages
+                {/* Button: Icon only, smaller size */}
+                <Button 
+                    className="w-full bg-amber-500 text-gray-900 hover:bg-amber-400 font-bold mt-auto h-8 text-sm p-0 flex justify-center items-center"
+                    aria-label="View Profile" 
+                >
+                    <ArrowRight className="h-4 w-4" /> 
                 </Button>
             </CardContent>
         </Card>
@@ -178,8 +189,8 @@ function PaginationControls({ currentPage, totalPages, onPageChange }) {
 
 export function FindServices() {
     // Mock state for results and pagination
-    const totalCreatives = 75; // Hypothetical total
-    const resultsPerPage = 15;
+    const totalCreatives = 76; // Hypothetical total
+    const resultsPerPage = 16;
     const totalPages = Math.ceil(totalCreatives / resultsPerPage);
     const currentPage = 1; // Start on page 1
 
@@ -221,8 +232,7 @@ export function FindServices() {
                         </div>
 
                         {/* Service Results Grid */}
-                        {/* 5 per row is achieved via xl:grid-cols-5 */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {MOCK_CREATIVES.map((creative) => (
                                 <ServiceCard key={creative.id} creative={creative} />
                             ))}

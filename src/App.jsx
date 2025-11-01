@@ -8,6 +8,7 @@ import { Home } from './pages/Home';
 import { FindServices } from './pages/FindServices';
 import { About } from './pages/About';
 import { Contact } from './pages/Contact';
+import { Profile } from './pages/Profile';
 import { Footer } from './components/Footer'; // <--- Import it
 
 function App() {
@@ -23,7 +24,7 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           {/* Add a route for the 'Profile' page once its component is ready */}
-          {/* <Route path="/profile" element={<Profile />} /> */}
+          <Route path="/profile" element={<Profile />} />
         </Routes>
       </main>
       
