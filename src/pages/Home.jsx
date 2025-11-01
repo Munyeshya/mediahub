@@ -2,11 +2,10 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import TypingText from "@/components/TypingText"; 
-import { Camera, Video, Mic, HeartHandshake, Zap, Shield, Search, TrendingUp, X, CheckCircle, ArrowRight, Star, Quote } from "lucide-react";
+import { Camera, Video, Mic, HeartHandshake, Zap, Shield, Search, TrendingUp, X, CheckCircle, ArrowRight, Star, Quote, Rocket } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// --- DATA: New Data Blocks ---
-
+// --- DATA BLOCKS (Unchanged) ---
 const coreProblems = [
     { title: "Unreliable Bookings", icon: X, description: "High risk of cancellations or no-shows due to informal agreements.", color: "text-red-400" },
     { title: "Unpredictable Quality", icon: TrendingUp, description: "Inconsistent quality of final deliverables and portfolio verification.", color: "text-red-400" },
@@ -21,9 +20,9 @@ const coreServices = [
 ];
 
 const testimonials = [
-    { quote: "MediaHub eliminated all the headaches of hiring. Found a verified videographer in minutes, and the payment escrow gave me total peace of mind. Truly professional!", name: "Jean-Claude B.", city: "Kigali" },
-    { quote: "The best directory for quality creatives in Rwanda. The portfolio check feature meant I didn't waste time sifting through unproven profiles. Highly recommended!", name: "Sarah N.", city: "Remera" },
-    { quote: "As a client who values reliability, MediaHub is a game-changer. The formal booking agreement ensured my event photographer was on time and delivered high-quality work.", name: "Isabelle M.", city: "Gisenyi" },
+    { quote: "MediaHub eliminated all the headaches of hiring. Found a verified videographer in minutes, and the payment escrow gave me total peace of mind.", name: "Jean-Claude B.", city: "Kigali" },
+    { quote: "The best directory for quality creatives in Rwanda. The portfolio check feature meant I didn't waste time sifting through unproven profiles.", name: "Sarah N.", city: "Remera" },
+    { quote: "As a client who values reliability, MediaHub is a game-changer. The formal booking agreement ensured high-quality work and was on time.", name: "Isabelle M.", city: "Gisenyi" },
 ];
 
 const featuredCreatives = [
@@ -37,9 +36,10 @@ const featuredCreatives = [
 export function Home() {
   return (
     <div className="bg-gray-900 text-white min-h-screen bg-abstract-motion animate-abstract-move">
-      <div className="container mx-auto px-4 py-12 md:py-20">
+      {/* 1. Wider container (max-w-7xl) for more side space */}
+      <div className="mx-auto max-w-7xl px-8 py-12 md:py-20"> 
         
-        {/* --- 1. Massive Dynamic Hero Section --- */}
+        {/* --- 1. Massive Dynamic Hero Section (Sizing remains large) --- */}
         <section className="text-center mb-24 max-w-6xl mx-auto pt-16 pb-20 border-b border-amber-500/30">
             
             <h1 className="text-5xl sm:text-7xl lg:text-8xl font-extrabold text-white leading-snug mb-6">
@@ -70,21 +70,21 @@ export function Home() {
             </div>
         </section>
 
-        {/* --- 2. Staggered Problem & Solution Callout --- */}
+        {/* --- 2. Staggered Problem & Solution Callout (Smaller Content) --- */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-24 items-start">
             
             {/* The Problems Column */}
             <div className="bg-gray-800 p-8 rounded-xl shadow-2xl border-t-4 border-red-500 transition-all duration-500 hover:shadow-red-500/10">
-                <h2 className="text-4xl font-extrabold text-white mb-6 flex items-center">
-                    <X className="h-8 w-8 text-red-500 mr-4" /> The Challenges We Eliminate
+                <h2 className="text-3xl font-extrabold text-white mb-6 flex items-center">
+                    <X className="h-7 w-7 text-red-500 mr-3" /> The Challenges We Eliminate
                 </h2>
-                <div className="space-y-8">
+                <div className="space-y-6">
                     {coreProblems.map((problem, index) => (
-                        <div key={index} className="flex items-center space-x-4">
-                            <problem.icon className={`h-8 w-8 ${problem.color} flex-shrink-0`} />
+                        <div key={index} className="flex items-start space-x-4">
+                            <problem.icon className={`h-6 w-6 ${problem.color} flex-shrink-0 mt-1`} />
                             <div>
-                                <h3 className="text-2xl font-semibold text-white">{problem.title}</h3>
-                                <p className="text-gray-400">{problem.description}</p>
+                                <h3 className="text-xl font-semibold text-white">{problem.title}</h3> {/* Reduced size */}
+                                <p className="text-gray-400 text-base">{problem.description}</p> {/* Reduced size */}
                             </div>
                         </div>
                     ))}
@@ -93,38 +93,65 @@ export function Home() {
 
             {/* The Solution Column */}
             <div className="bg-gray-800 p-8 rounded-xl shadow-2xl border-t-4 border-amber-500 transition-all duration-500 hover:shadow-amber-500/20">
-                <h2 className="text-4xl font-extrabold text-white mb-6 flex items-center">
-                    <CheckCircle className="h-8 w-8 text-amber-500 mr-4" /> Our Reliable Guarantees
+                <h2 className="text-3xl font-extrabold text-white mb-6 flex items-center">
+                    <CheckCircle className="h-7 w-7 text-amber-500 mr-3" /> Our Reliable Guarantees
                 </h2>
-                <div className="space-y-8">
-                    <div className="flex items-center space-x-4">
-                        <Shield className="h-8 w-8 text-amber-500 flex-shrink-0" />
+                <div className="space-y-6">
+                    <div className="flex items-start space-x-4">
+                        <Shield className="h-6 w-6 text-amber-500 flex-shrink-0 mt-1" />
                         <div>
-                            <h3 className="text-2xl font-semibold text-white">Verified Trust</h3>
-                            <p className="text-gray-400">Secure escrow payments and verified accounts protect both client funds and creative fees.</p>
+                            <h3 className="text-xl font-semibold text-white">Verified Trust</h3> {/* Reduced size */}
+                            <p className="text-gray-400 text-base">Secure escrow payments and verified accounts protect both client funds and creative fees.</p> {/* Reduced size */}
                         </div>
                     </div>
-                    <div className="flex items-center space-x-4">
-                        <Search className="h-8 w-8 text-amber-500 flex-shrink-0" />
+                    <div className="flex items-start space-x-4">
+                        <Search className="h-6 w-6 text-amber-500 flex-shrink-0 mt-1" />
                         <div>
-                            <h3 className="text-2xl font-semibold text-white">Transparent Pricing</h3>
-                            <p className="text-gray-400">Clear service packages and community ratings remove all negotiation friction.</p>
+                            <h3 className="text-xl font-semibold text-white">Transparent Pricing</h3> {/* Reduced size */}
+                            <p className="text-gray-400 text-base">Clear service packages and community ratings remove all negotiation friction.</p> {/* Reduced size */}
                         </div>
                     </div>
-                    <div className="flex items-center space-x-4">
-                        <TrendingUp className="h-8 w-8 text-amber-500 flex-shrink-0" />
+                    <div className="flex items-start space-x-4">
+                        <TrendingUp className="h-6 w-6 text-amber-500 flex-shrink-0 mt-1" />
                         <div>
-                            <h3 className="text-2xl font-semibold text-white">Guaranteed Quality</h3>
-                            <p className="text-gray-400">Rigorously checked portfolios ensure you only work with proven professionals.</p>
+                            <h3 className="text-xl font-semibold text-white">Guaranteed Quality</h3> {/* Reduced size */}
+                            <p className="text-gray-400 text-base">Rigorously checked portfolios ensure you only work with proven professionals.</p> {/* Reduced size */}
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        {/* --- 3. Client Testimonials Section --- */}
+        {/* --- NEW SECTION 3: Image & Text Row --- */}
+        <section className="mb-24 bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-700">
+            <div className="grid grid-cols-1 lg:grid-cols-2">
+                {/* Image Side (Placeholder) */}
+                <div className="relative h-64 lg:h-auto bg-amber-900/40 flex items-center justify-center p-12">
+                    <Rocket className="w-24 h-24 text-amber-500 animate-bounce" />
+                    {/* In a real app, replace the icon/div above with: <img src="/path/to/image.jpg" alt="Team working" className="w-full h-full object-cover" /> */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-gray-900/50 via-transparent to-gray-900/50"></div>
+                </div>
+                
+                {/* Content Side */}
+                <div className="p-10 md:p-16 flex flex-col justify-center">
+                    <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4">
+                        Fueling Rwanda's <span className="text-amber-500">Creative Growth</span>
+                    </h2>
+                    <p className="text-xl text-gray-400 mb-6">
+                        We don't just connect—we empower. By centralizing the market, we provide creatives with predictable income and clients with reliable, high-quality service, driving the digital economy forward.
+                    </p>
+                    <Link to="/about">
+                        <Button className="bg-amber-500 text-gray-900 hover:bg-amber-400 text-lg py-6 px-8 self-start">
+                            Learn More About Our Impact
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+        </section>
+        
+        {/* --- SECTION 4 (formerly 3): Client Testimonials Section (Smaller Content) --- */}
         <section className="mb-24">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-white text-center mb-12">
+            <h2 className="text-4xl font-extrabold text-white text-center mb-12">
                 What Our Clients Say
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -135,10 +162,10 @@ export function Home() {
                                    transition-transform duration-300 hover:scale-[1.03]"
                     >
                         <CardContent className="p-0">
-                            <Quote className="h-8 w-8 text-amber-500 mb-4 opacity-70" />
-                            <p className="italic text-lg text-gray-300 mb-4">"{review.quote}"</p>
+                            <Quote className="h-7 w-7 text-amber-500 mb-4 opacity-70" />
+                            <p className="italic text-base text-gray-300 mb-4">"{review.quote}"</p> {/* Reduced size */}
                             <div className="text-right">
-                                <p className="font-semibold text-white">— {review.name}</p>
+                                <p className="font-semibold text-white text-base">— {review.name}</p> {/* Reduced size */}
                                 <p className="text-sm text-amber-500">{review.city}</p>
                             </div>
                         </CardContent>
@@ -147,9 +174,9 @@ export function Home() {
             </div>
         </section>
 
-        {/* --- 4. Top-Rated Creatives Showcase --- */}
+        {/* --- SECTION 5 (formerly 4): Top-Rated Creatives Showcase (Smaller Content) --- */}
         <section className="mb-24">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-white text-center mb-12">
+            <h2 className="text-4xl font-extrabold text-white text-center mb-12">
                 Book The <span className="text-amber-500">Highest Rated</span> Talent
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -160,16 +187,16 @@ export function Home() {
                                        transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/20"
                         >
                             <CardHeader className="flex flex-row items-center justify-between p-0 mb-4">
-                                <CardTitle className="text-2xl font-bold text-white hover:text-amber-500">{creative.name}</CardTitle>
+                                <CardTitle className="text-xl font-bold text-white hover:text-amber-500">{creative.name}</CardTitle> {/* Reduced size */}
                                 <div className="flex items-center space-x-1">
                                     <Star className="h-5 w-5 fill-amber-500 text-amber-500" />
-                                    <span className="text-xl font-semibold text-amber-400">{creative.rating}</span>
+                                    <span className="text-lg font-semibold text-amber-400">{creative.rating}</span> {/* Reduced size */}
                                 </div>
                             </CardHeader>
                             <CardContent className="p-0">
-                                <p className="text-gray-400 mb-2">{creative.category} Specialist</p>
+                                <p className="text-gray-400 text-base mb-2">{creative.category} Specialist</p> {/* Reduced size */}
                                 <p className="text-sm text-gray-500">Completed: **{creative.bookings}**</p>
-                                <Button className="mt-4 w-full bg-amber-500 text-gray-900 hover:bg-amber-400">View Profile</Button>
+                                <Button className="mt-4 w-full bg-amber-500 text-gray-900 hover:bg-amber-400 py-5 text-base">View Profile</Button>
                             </CardContent>
                         </Card>
                     </Link>
@@ -184,9 +211,9 @@ export function Home() {
             </div>
         </section>
 
-        {/* --- 5. Service Showcase Grid (Moved to last) --- */}
+        {/* --- SECTION 6 (formerly 5): Service Showcase Grid (Smaller Content) --- */}
         <section className="mb-20 text-center">
-            <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-12">
+            <h2 className="text-4xl font-extrabold text-white mb-12">
                 Explore Our Core <span className="text-amber-500">Service Categories</span>
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -198,11 +225,11 @@ export function Home() {
                                    transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-amber-500/30"
                     >
                         <CardHeader className="text-center space-y-4 pt-8">
-                            <service.icon className="h-16 w-16 text-amber-500 mx-auto" />
+                            <service.icon className="h-12 w-12 text-amber-500 mx-auto" /> {/* Reduced icon size */}
                             <CardTitle className="text-xl font-bold text-white">{service.title}</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-gray-400 text-center">{service.description}</p>
+                            <p className="text-gray-400 text-base text-center">{service.description}</p> {/* Reduced size */}
                         </CardContent>
                     </Card>
                 ))}
