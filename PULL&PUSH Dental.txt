@@ -1,0 +1,36 @@
+# 0) Go to the project root
+cd /srv/royalclinic
+
+# 1) Backup your environment file so the pull can’t clobber it
+cp -p .env .env.server.bak
+
+# 2) Fetch latest and hard-reset to origin/main (avoids merge prompts)
+git fetch origin
+git reset --hard origin/main
+
+# 3) Restore your .env
+mv -f .env.server.bak .env
+# 4) Remove old collected assets and recreate the folder
+rm -rf /srv/royalclinic/staticfiles
+mkdir -p /srv/royalclinic/staticfiles
+
+# (optional but recommended) make sure Nginx can read them
+# if you run gunicorn as a different user, keep ownership on code;
+# nginx just needs read/execute on staticfiles
+chmod -R 755 /srv/royalclinic/staticfiles
+# 5) Activate venv and collectstatic
+source venv/bin/activate  # adjust if your venv path is different
+python -V                 # quick sanity check
+python manage.py collectstatic --noinput
+deactivate
+# 6) Restart gunicorn service (your unit name is "royalclinic")
+sudo systemctl restart royalclinic
+sudo systemctl status royalclinic --no-pager -l
+
+# 7) Reload nginx (no config changes here, but safe)
+sudo nginx -t && sudo systemctl reload nginx
+# Home page should be 200
+curl -I https://royalclinic.rw/
+
+# One of the favicon assets should be 200 and come from /static/
+curl -I https://royalclinic.rw/static/images/misc/favicon_io/favicon-32x32.png
