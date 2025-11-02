@@ -224,7 +224,7 @@ export function Login() {
                     {/* 3. Registration Link */}
                     <p className="mt-8 text-center text-sm text-gray-400">
                         Don't have a creator account?{' '}
-                        <Link to="/register" className="font-semibold text-amber-500 hover:text-amber-400 transition-colors">
+                        <Link to="/profile" className="font-semibold text-amber-500 hover:text-amber-400 transition-colors">
                             Apply to be a Creative
                         </Link>
                     </p>
