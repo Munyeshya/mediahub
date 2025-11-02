@@ -81,3 +81,13 @@ export async function authenticateLogin(email, password, role) {
         throw new Error("Authentication service error."); 
     }
 }
+
+export const logout = () => {
+    // 1. Clear any stored authentication data
+    localStorage.removeItem('userAuthToken'); 
+    localStorage.removeItem('userRole'); 
+    // You may also want to clear any in-memory state in a real app
+
+    console.log("User logged out. Auth state cleared.");
+    return true; // Indicate success
+};
