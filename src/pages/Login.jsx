@@ -1,4 +1,4 @@
-// src/pages/Login.jsx (Toast-Only Feedback)
+// src/pages/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify'; 
@@ -9,38 +9,48 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; 
 import { Mail, Lock, LogIn, Chrome, MountainIcon, Users, Shield, Briefcase } from "lucide-react";
 
-// IMPORT THE UNIFIED AUTHENTICATION FUNCTION (Assumed to be in '@/logic/db')
+// IMPORT THE UNIFIED AUTHENTICATION FUNCTION
 import { authenticateLogin } from '@/logic/db'; 
+
+// 💥 NEW: Import the useAuth hook to access the global login function
+import { useAuth } from '../logic/auth'; 
 
 export function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [selectedRole, setSelectedRole] = useState('Client'); // Default to Client
-    // 💥 REMOVED: const [error, setError] = useState('');
+    const [selectedRole, setSelectedRole] = useState('Client'); 
+    
+    // 💥 NEW: Get the login function from the Auth Context
+    const { login } = useAuth(); 
+
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // 💥 REMOVED: setError(''); 
 
         let result = null;
         let dashboardPath = null;
 
-        // Configuration object for React-Toastify messages
         const toastConfig = {
             position: "bottom-right",
             hideProgressBar: false,
             closeOnClick: true,
             pauseOnHover: true,
             draggable: true,
-            theme: "dark" // Matches the dark dashboard aesthetic
+            theme: "dark"
         };
 
         try {
             // CALL THE UNIFIED AUTHENTICATION FUNCTION
+            // Assuming authenticateLogin returns { role: 'Admin' | 'Client' | 'Giver' } on success
             result = await authenticateLogin(email, password, selectedRole);
 
             if (result) {
+                // 💥 CRITICAL FIX: Update the global authentication state
+                // This call sets the userRole in context and localStorage,
+                // which satisfies the <ProtectedRoute /> component.
+                login(result.role); 
+                
                 dashboardPath = `/dashboard/${result.role.toLowerCase()}`;
                 
                 // SUCCESS TOASTIFY CALL
@@ -51,30 +61,29 @@ export function Login() {
                 
                 // Delay navigation slightly to let the toast show
                 setTimeout(() => {
-                    navigate(dashboardPath);
+                    // Navigation will now succeed because the state is set
+                    navigate(dashboardPath, { replace: true });
                 }, 100); 
 
             } else {
                 const failureMessage = `Invalid email or password for ${selectedRole}.`;
                 
-                // FAILURE TOASTIFY CALL now carries the full message
+                // FAILURE TOASTIFY CALL 
                 toast.error(failureMessage, {
                     ...toastConfig,
                     autoClose: 3000,
                 });
-                // 💥 REMOVED: setError(failureMessage);
             }
         } catch (err) {
             console.error("Login attempt failed:", err);
             const systemErrorMessage = 'An error occurred during authentication. Please contact support.';
             
-            // SYSTEM ERROR TOASTIFY CALL now carries the full message
+            // SYSTEM ERROR TOASTIFY CALL 
             toast.error("System Error 🚨", {
                 ...toastConfig,
                 autoClose: 5000,
                 description: systemErrorMessage,
             });
-            // 💥 REMOVED: setError(systemErrorMessage);
         }
     };
 
@@ -144,7 +153,6 @@ export function Login() {
                         </RadioGroup>
                     </div>
 
-                    {/* 💥 REMOVED: Local Error Message Display (Now handled by Toastify) */}
                     
                     {/* Google Sign-In and Divider */}
                     <Button 
