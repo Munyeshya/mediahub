@@ -46,9 +46,11 @@ export function Header() {
 
         {/* CTA Buttons (Desktop) */}
         <div className="hidden md:flex items-center space-x-4">
+          <Link to="/login">
           <Button variant="outline" className="text-amber-500 border-amber-500 hover:bg-amber-900/20">
             Login
           </Button>
+          </Link>
           <Button className="bg-amber-500 text-gray-900 hover:bg-amber-400">
             Book Creative
           </Button>

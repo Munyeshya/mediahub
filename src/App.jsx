@@ -10,6 +10,7 @@ import { About } from './pages/About';
 import { Contact } from './pages/Contact';
 import { Profile } from './pages/Profile';
 import { Footer } from './components/Footer'; // <--- Import it
+import { Login } from './pages/Login';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           {/* Add a route for the 'Profile' page once its component is ready */}
           <Route path="/profile" element={<Profile />} />
+          <Route path="/login" element={<Login />} />
         </Routes>
       </main>
       
