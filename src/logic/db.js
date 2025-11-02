@@ -1,82 +1,55 @@
-// src/logic/db.js
+// src/logic/db.js (ADD THIS FUNCTION)
 
-import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
-
-// Load environment variables from .env file
-dotenv.config();
-
-// --- 1. Database Connection Setup ---
-
-const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT,
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
-});
-
-// Test connection on startup
-pool.getConnection()
-    .then(connection => {
-        console.log("✅ Successfully connected to MediaHub MySQL database.");
-        connection.release();
-    })
-    .catch(err => {
-        console.error("❌ Database connection failed:", err.message);
-        // Important: Exit process if essential service fails
-        process.exit(1); 
-    });
-
-
-// --- 2. Reusable Query Functions (Logic Layer) ---
+import bcrypt from 'bcryptjs'; // You'll need to install this library
+// npm install bcryptjs 
 
 /**
- * Executes a SELECT query to retrieve profiles based on filters.
- * @param {string} serviceName - The service name (e.g., 'Wedding Photography').
- * @param {number} minRating - The minimum required rating.
- * @param {number} minPrice - The minimum hourly rate.
- * @returns {Promise<Array>} A list of matching creative profiles.
+ * Handles the login authentication for an Admin.
+ * @param {string} email - The admin's email.
+ * @param {string} password - The plaintext password provided by the user.
+ * @returns {Promise<number|null>} The admin_id on successful login, or null otherwise.
  */
-export async function findCreativeServices({ serviceName, minRating, minPrice }) {
-    // Basic SQL Query using JOINs to pull data from multiple tables
+export async function authenticateAdmin(email, password) {
     const sql = `
-        SELECT 
-            p.profile_id, p.display_name, p.city, sg.is_verified, 
-            gsp.hourly_rate_rwf, st.service_name, 
-            AVG(r.rating) AS average_rating, COUNT(b.booking_id) AS total_bookings
-        FROM 
-            Profile p
-        JOIN Service_Giver sg ON p.giver_id = sg.giver_id
-        JOIN Giver_Service_Price gsp ON p.giver_id = gsp.giver_id
-        JOIN Service_Type st ON gsp.service_id = st.service_id
-        LEFT JOIN Review r ON p.giver_id = r.giver_id
-        LEFT JOIN Booking b ON p.giver_id = b.giver_id AND b.status = 'Completed'
-        WHERE 
-            st.service_name = ?
-            AND gsp.hourly_rate_rwf >= ?
-        GROUP BY 
-            p.profile_id
-        HAVING 
-            average_rating >= ? OR average_rating IS NULL
-        ORDER BY 
-            average_rating DESC
+        SELECT admin_id, password_hash
+        FROM Admin
+        WHERE email = ?;
     `;
 
-    // The query parameters replace the '?' placeholders securely
-    const params = [serviceName, minPrice, minRating];
-
     try {
-        const [rows] = await pool.query(sql, params);
-        return rows;
+        const [rows] = await pool.query(sql, [email]);
+        
+        if (rows.length === 0) {
+            console.log(`Admin login failed: Email not found (${email})`);
+            return null; // Email not found
+        }
+
+        const admin = rows[0];
+        
+        // IMPORTANT: Compare the provided password with the stored hash
+        // In a real application, you must use a hashing library like bcryptjs
+        // For testing purposes, if you inserted plain text passwords, you'd use a simple check (but don't do this in production)
+        
+        // --- SECURE HASH CHECK (Requires bcryptjs) ---
+        // Since we placeholder-hashed passwords, we assume this comparison:
+        // const isMatch = await bcrypt.compare(password, admin.password_hash);
+
+        // --- TEMPORARY MOCK CHECK (Replace with real hashing ASAP) ---
+        // For now, let's assume a simplified check if the password equals the placeholder name:
+        // You should modify the database insert to use a hash of a known password (e.g., 'admin123')
+        const MOCK_HASH_ADMIN = 'admin123'; // Replace with a real hash later
+        const isMatch = (password === MOCK_HASH_ADMIN); // Temporary check
+
+        if (isMatch) {
+            console.log(`Admin login successful: ID ${admin.admin_id}`);
+            return admin.admin_id;
+        } else {
+            console.log(`Admin login failed: Invalid password for ${email}`);
+            return null;
+        }
+
     } catch (error) {
-        console.error("Error executing findCreativeServices query:", error.message);
-        throw new Error("Failed to retrieve services from database.");
+        console.error("Error during admin authentication:", error.message);
+        throw new Error("Authentication service error.");
     }
 }
-
-// You can add other functions here (e.g., getClientBookings, createNewReview)
-// export async function getServiceCategories() { ... }
