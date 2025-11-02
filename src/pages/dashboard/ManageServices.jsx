@@ -7,14 +7,10 @@ import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, Tabl
 import { Input } from '@/components/ui/input';
 import { Plus, Edit, Trash2, RotateCw } from 'lucide-react'; 
 
-// 💥 New: Imports for Dialog/Modal
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Label } from '@/components/ui/label';
 
-// Assuming you add these functions to your db.js (see next step)
-// import { fetchServices, addService, updateService, deleteService } from '../../logic/db'; 
-
-// Mock DB functions for immediate testing
+// Assuming you add these functions to your db.js (Mocked for now)
 const mockFetchServices = async () => {
     await new Promise(resolve => setTimeout(resolve, 500)); 
     return [
@@ -35,6 +31,12 @@ const mockAddService = async (newService) => {
     return { ...newService, id: Math.floor(Math.random() * 1000) + 100 }; 
 };
 
+// 💥 IMPORTANT: This is the actual function you'd replace with your db.js call
+const mockDeleteService = async (id) => {
+    await new Promise(resolve => setTimeout(resolve, 500)); 
+    return true;
+};
+
 
 export function ManageServices() {
     const [services, setServices] = useState([]);
@@ -46,13 +48,12 @@ export function ManageServices() {
     const [currentService, setCurrentService] = useState(null); // Null for Add, object for Edit
     const [serviceForm, setServiceForm] = useState({ name: '', description: '', active: true });
 
-    // --- Data Fetching ---
+    // --- Data Fetching (remains the same) ---
     const loadServices = async () => {
         setIsLoading(true);
         setError(null);
         try {
-            // 💥 Replace with your actual fetchServices function from db.js
-            const data = await mockFetchServices(); 
+            const data = await mockFetchServices(); // Replace with fetchServices
             setServices(data);
         } catch (err) {
             setError(err.message);
@@ -66,7 +67,7 @@ export function ManageServices() {
         loadServices();
     }, []);
 
-    // --- Handlers for CRUD ---
+    // --- Handlers (handleOpenModal and handleSaveService remain the same) ---
     const handleOpenModal = (service = null) => {
         setCurrentService(service);
         if (service) {
@@ -88,17 +89,13 @@ export function ManageServices() {
         try {
             let result;
             if (currentService) {
-                // 💥 EDIT
-                // Replace with your actual updateService function
+                // EDIT
                 result = await mockUpdateService({ ...currentService, ...serviceForm }); 
-                
                 setServices(services.map(s => s.id === result.id ? result : s));
                 toast.success(`Service '${result.name}' updated successfully.`, { theme: "dark" });
             } else {
-                // 💥 ADD
-                // Replace with your actual addService function
+                // ADD
                 result = await mockAddService(serviceForm); 
-                
                 setServices([...services, result]);
                 toast.success(`New service '${result.name}' added successfully.`, { theme: "dark" });
             }
@@ -109,23 +106,54 @@ export function ManageServices() {
         }
     };
 
-    const handleDelete = async (id, name) => {
-        if (!window.confirm(`Are you sure you want to delete the service '${name}'? This cannot be undone!`)) {
-            return;
-        }
+    // 💥 UPDATED: DELETE HANDLER with Toast Confirmation
+    const handleDelete = (id, name) => {
+        const confirmAndExecuteDelete = async () => {
+            try {
+                // 1. Execute the delete operation (Replace with deleteService(id))
+                await mockDeleteService(id); 
+                
+                // 2. Update local state
+                setServices(services.filter(s => s.id !== id));
+                
+                // 3. Success notification
+                toast.success(`Service '${name}' has been permanently deleted.`, { theme: "dark" });
+            } catch (err) {
+                toast.error(`Failed to delete service: ${err.message}`, { theme: "dark" });
+            }
+        };
 
-        try {
-            // 💥 Replace with your actual deleteService function
-            await new Promise(resolve => setTimeout(resolve, 500)); // mockDeleteService(id); 
-            
-            setServices(services.filter(s => s.id !== id));
-            toast.success(`Service '${name}' deleted successfully.`, { theme: "dark" });
-        } catch (err) {
-            toast.error(`Failed to delete service: ${err.message}`, { theme: "dark" });
-        }
+        // Show the Warning Toast with a confirm button
+        toast.warn(
+            <div className="flex flex-col items-start">
+                <p className="font-bold text-lg mb-2">Confirm Deletion</p>
+                <p className="mb-3">Are you sure you want remove this service?</p>
+                <Button 
+                    size="sm"
+                    variant="destructive"
+                    // Manually close the toast and execute the delete
+                    onClick={() => {
+                        toast.dismiss(); 
+                        confirmAndExecuteDelete();
+                    }}
+                    className="mt-2"
+                >
+                    Yes, Delete Permanently
+                </Button>
+            </div>, 
+            {
+                position: "top-center",
+                autoClose: false, // Keep the toast open until the user confirms or dismisses
+                closeOnClick: false,
+                draggable: false,
+                theme: "dark",
+                icon: <Trash2 className="h-6 w-6 text-red-400" />,
+            }
+        );
     };
 
-    // --- Render Logic ---
+
+    // --- Render Logic (remains the same) ---
     const renderContent = () => {
         if (isLoading) {
             return (
@@ -211,7 +239,7 @@ export function ManageServices() {
                 </CardContent>
             </Card>
 
-            {/* ADD/EDIT SERVICE DIALOG/MODAL */}
+            {/* ADD/EDIT SERVICE DIALOG/MODAL (Remains the same) */}
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogContent className="bg-gray-800 border-gray-700 text-white sm:max-w-[425px]">
                     <DialogHeader>
@@ -221,7 +249,7 @@ export function ManageServices() {
                     </DialogHeader>
                     
                     <form onSubmit={handleSaveService} className="grid gap-4 py-4">
-                        {/* Name Field */}
+                        {/* Form fields... (remain the same) */}
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="name" className="text-right">Name</Label>
                             <Input 
@@ -232,8 +260,6 @@ export function ManageServices() {
                                 required
                             />
                         </div>
-                        
-                        {/* Description Field */}
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="description" className="text-right">Description</Label>
                             <Input 
@@ -244,8 +270,6 @@ export function ManageServices() {
                                 required
                             />
                         </div>
-
-                        {/* Status Toggle (Simple Checkbox for Active) */}
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="active" className="text-right">Active</Label>
                             <input
