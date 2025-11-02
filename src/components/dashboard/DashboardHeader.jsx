@@ -1,11 +1,13 @@
 // src/components/dashboard/DashboardHeader.jsx (A11y Compliant with SheetTitle)
-import { Bell, Settings, User, Menu } from "lucide-react"; 
+import { Bell, Settings, User, Menu, LogOut } from "lucide-react"; 
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"; // 💥 Imported SheetTitle/Description
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { DashboardSidebar } from "./DashboardSidebar";
+import { useAuth } from '../../logic/auth'; // 💥 Import useAuth
 
 export function DashboardHeader({ title = "Dashboard", role = "Admin" }) {
-
+    const { logout } = useAuth(); // 💥 Get the logout function
+    
     // Tailwind CSS Utility for Visually Hiding Content (Commonly used in Shadcn projects)
     const visuallyHidden = "sr-only"; 
 
@@ -14,18 +16,18 @@ export function DashboardHeader({ title = "Dashboard", role = "Admin" }) {
             
             {/* 1. Mobile Menu / Title */}
             <div className="flex items-center space-x-4">
-                {/* 💥 SHEET TRIGGER: Visible only on small screens */}
+                {/* SHEET TRIGGER: Visible only on small screens */}
                 <Sheet>
                     <SheetTrigger asChild>
                         <Button variant="ghost" size="icon" className="md:hidden text-gray-400 hover:text-white">
                             <Menu className="h-6 w-6" />
-                            <span className={visuallyHidden}>Open Sidebar Menu</span> {/* A11y for the button */}
+                            <span className={visuallyHidden}>Open Sidebar Menu</span>
                         </Button>
                     </SheetTrigger>
                     
                     <SheetContent side="left" className="p-0 border-r-0 bg-gray-900 w-64">
                         
-                        {/* 💥 A11y Fix: Add SheetTitle and SheetDescription, visually hidden */}
+                        {/* A11y Fix: Add SheetTitle and SheetDescription, visually hidden */}
                         <SheetTitle className={visuallyHidden}>
                             {role} Dashboard Navigation
                         </SheetTitle>
@@ -42,7 +44,7 @@ export function DashboardHeader({ title = "Dashboard", role = "Admin" }) {
                 <h1 className="text-xl md:text-2xl font-bold text-amber-500">{title}</h1>
             </div>
             
-            {/* 2. Right Side Icons (User Menu, Notifications, etc.) */}
+            {/* 2. Right Side Icons (User Menu, Notifications, Logout) */}
             <div className="flex items-center space-x-2 md:space-x-4">
                 
                 {/* Notification Button */}
@@ -62,6 +64,17 @@ export function DashboardHeader({ title = "Dashboard", role = "Admin" }) {
                     <User className="h-5 w-5" />
                     <span className="hidden sm:block text-sm">User Name ({role})</span> 
                 </div>
+                
+                {/* 💥 LOGOUT BUTTON */}
+                <Button 
+                    onClick={logout} // 💥 Calls the logout function from useAuth
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-red-500 hover:bg-gray-700 hover:text-red-400"
+                >
+                    <LogOut className="h-5 w-5" />
+                    <span className={visuallyHidden}>Log Out</span>
+                </Button>
             </div>
         </header>
     );

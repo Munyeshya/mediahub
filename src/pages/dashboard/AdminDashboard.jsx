@@ -30,13 +30,13 @@ const AdminDashboardLayout = ({ title }) => {
     
     return (
         <div className="flex min-h-screen bg-gray-950">
-            {/* 💥 DESKTOP SIDEBAR: Visible only on md screens and larger */}
+            {/* DESKTOP SIDEBAR: Visible only on md screens and larger */}
             <aside className="hidden md:block w-64 flex-shrink-0 h-screen sticky top-0">
                 <DashboardSidebar role={role} />
             </aside>
             
             <div className="flex-1 flex flex-col">
-                {/* 💥 Pass the role to the Header so it can render the mobile sidebar */}
+                {/* Pass the role to the Header so it can render the mobile sidebar */}
                 <DashboardHeader title={title} role={role} /> 
                 <main className="p-4 md:p-8 flex-1 overflow-y-auto">
                     <Outlet /> 
