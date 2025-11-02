@@ -1,26 +1,74 @@
-// src/pages/Login.jsx
-import { Link } from 'react-router-dom';
+// src/pages/Login.jsx (Unified Login with Role Selection and Sonner)
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, LogIn, Chrome, MountainIcon } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; 
+import { toast } from "sonner"; // 💥 Sonner Toast Import
+import { Mail, Lock, LogIn, Chrome, MountainIcon, Users, Shield, Briefcase } from "lucide-react";
+
+// IMPORT THE UNIFIED AUTHENTICATION FUNCTION
+import { authenticateLogin } from '@/logic/db'; 
 
 export function Login() {
-    
-    const handleSubmit = (e) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [selectedRole, setSelectedRole] = useState('Client'); // Default to Client
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // NOTE: Replace alert with actual authentication logic (e.g., Firebase, JWT exchange)
-        alert("Attempting to log in...");
+        setError(''); 
+
+        let result = null;
+        let dashboardPath = null;
+
+        try {
+            // CALL THE UNIFIED AUTHENTICATION FUNCTION, passing all necessary data
+            result = await authenticateLogin(email, password, selectedRole);
+
+            if (result) {
+                // Set the correct redirection path
+                dashboardPath = `/dashboard/${result.role.toLowerCase()}`;
+                
+                // 💥 SUCCESS TOAST (Sonner API)
+                toast.success(`Login Successful! 🎉`, {
+                    description: `Welcome back, ${result.role}. Redirecting you now.`,
+                    duration: 2000,
+                });
+                
+                // Delay navigation slightly to let the toast show
+                setTimeout(() => {
+                    navigate(dashboardPath);
+                }, 100); 
+
+            } else {
+                // 💥 FAILURE TOAST (Sonner API)
+                toast.error("Login Failed 🔒", {
+                    description: `Invalid credentials for the selected role. Please try again.`,
+                    duration: 3000,
+                });
+                setError(`Invalid email or password for ${selectedRole}.`);
+            }
+        } catch (err) {
+            console.error("Login attempt failed:", err);
+            // 💥 SYSTEM ERROR TOAST (Sonner API)
+            toast.error("System Error", {
+                description: "An unrecoverable authentication service error occurred.",
+                duration: 5000,
+            });
+            setError('An error occurred during authentication. Please contact support.');
+        }
     };
 
     return (
-        // Uses the animated dark background class for brand consistency
         <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center bg-abstract-motion">
             
-            <Card className="w-full max-w-md bg-gray-800 border border-gray-700 shadow-2xl p-6 md:p-8">
+            <Card className="w-full max-w-md bg-gray-800 border border-gray-700 shadow-2xl p-4 md:p-8">
                 <CardHeader className="text-center pb-6">
-                    {/* Logo/Brand */}
                     <Link to="/" className="flex items-center justify-center space-x-2 mb-4">
                         <MountainIcon className="h-8 w-8 text-amber-500" />
                         <span className="text-2xl font-bold text-white">MediaHub</span>
@@ -30,21 +78,72 @@ export function Login() {
                         <LogIn className="h-6 w-6 mr-2 text-amber-500" /> Sign In
                     </CardTitle>
                     <p className="text-sm text-gray-400 mt-2">
-                        Welcome back! Access your Creative Hub.
+                        Welcome back! Select your role to continue.
                     </p>
                 </CardHeader>
                 
                 <CardContent>
                     
-                    {/* 1. Google Sign-In Button (Modern Priority) */}
-                    <Button 
+                    {/* ROLE SELECTION RADIO GROUP */}
+                    <div className="mb-6 space-y-2">
+                        <Label className="text-white">I am signing in as:</Label>
+                        <RadioGroup 
+                            value={selectedRole} 
+                            onValueChange={setSelectedRole} 
+                            className="flex justify-between space-x-2"
+                        >
+                            {/* Client Role */}
+                            <div className="flex-1">
+                                <RadioGroupItem value="Client" id="client" className="sr-only" />
+                                <Label 
+                                    htmlFor="client" 
+                                    className={`flex flex-col items-center justify-between rounded-md border-2 p-3 cursor-pointer transition-colors ${selectedRole === 'Client' ? 'border-amber-500 bg-amber-900/10' : 'border-gray-700 hover:bg-gray-700/50'}`}
+                                >
+                                    <Users className="h-6 w-6 mb-1 text-amber-500" />
+                                    <span className="text-sm font-medium">Client</span>
+                                </Label>
+                            </div>
+
+                            {/* Giver Role */}
+                            <div className="flex-1">
+                                <RadioGroupItem value="Giver" id="giver" className="sr-only" />
+                                <Label 
+                                    htmlFor="giver" 
+                                    className={`flex flex-col items-center justify-between rounded-md border-2 p-3 cursor-pointer transition-colors ${selectedRole === 'Giver' ? 'border-amber-500 bg-amber-900/10' : 'border-gray-700 hover:bg-gray-700/50'}`}
+                                >
+                                    <Briefcase className="h-6 w-6 mb-1 text-amber-500" />
+                                    <span className="text-sm font-medium">Creative</span>
+                                </Label>
+                            </div>
+
+                            {/* Admin Role */}
+                            <div className="flex-1">
+                                <RadioGroupItem value="Admin" id="admin" className="sr-only" />
+                                <Label 
+                                    htmlFor="admin" 
+                                    className={`flex flex-col items-center justify-between rounded-md border-2 p-3 cursor-pointer transition-colors ${selectedRole === 'Admin' ? 'border-red-500 bg-red-900/10' : 'border-gray-700 hover:bg-gray-700/50'}`}
+                                >
+                                    <Shield className="h-6 w-6 mb-1 text-red-500" />
+                                    <span className="text-sm font-medium">Admin</span>
+                                </Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+
+                    {error && (
+                        <div className={`p-3 rounded-md mb-4 text-sm border ${selectedRole === 'Admin' ? 'bg-red-900/50 text-red-300 border-red-700' : 'bg-amber-900/50 text-amber-300 border-amber-700'}`}>
+                            {error}
+                        </div>
+                    )}
+                    
+                    {/* Google Sign-In and Divider */}
+                    {/* <Button 
                         variant="outline" 
                         className="w-full mb-6 py-6 border-amber-500 text-amber-500 hover:bg-amber-900/20 font-semibold"
                     >
                         <Chrome className="h-5 w-5 mr-3" /> Continue with Google
                     </Button>
 
-                    {/* Divider */}
                     <div className="relative mb-6">
                         <div className="absolute inset-0 flex items-center">
                             <span className="w-full border-t border-gray-700"></span>
@@ -52,7 +151,7 @@ export function Login() {
                         <div className="relative flex justify-center text-xs uppercase">
                             <span className="bg-gray-800 px-2 text-gray-500">Or use your email</span>
                         </div>
-                    </div>
+                    </div> */}
                     
                     {/* 2. Email/Password Form */}
                     <form onSubmit={handleSubmit} className="space-y-6">
@@ -66,7 +165,9 @@ export function Login() {
                                     type="email" 
                                     placeholder="yourname@domain.com" 
                                     required 
-                                    className="pl-10 bg-gray-700 border-gray-600 text-white focus:border-amber-500"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className={`pl-10 bg-gray-700 border-gray-600 text-white focus:border-${selectedRole === 'Admin' ? 'red' : 'amber'}-500`}
                                 />
                             </div>
                         </div>
@@ -75,7 +176,7 @@ export function Login() {
                         <div className="space-y-2">
                             <div className="flex justify-between items-center">
                                 <Label htmlFor="password">Password</Label>
-                                <Link to="#" className="text-sm text-amber-500 hover:text-amber-400 transition-colors">
+                                <Link to="#" className={`text-sm text-${selectedRole === 'Admin' ? 'red' : 'amber'}-500 hover:text-amber-400 transition-colors`}>
                                     Forgot Password?
                                 </Link>
                             </div>
@@ -86,22 +187,26 @@ export function Login() {
                                     type="password" 
                                     placeholder="••••••••" 
                                     required 
-                                    className="pl-10 bg-gray-700 border-gray-600 text-white focus:border-amber-500"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className={`pl-10 bg-gray-700 border-gray-600 text-white focus:border-${selectedRole === 'Admin' ? 'red' : 'amber'}-500`}
                                 />
                             </div>
                         </div>
 
                         {/* Login Button */}
-                        <Button type="submit" className="w-full bg-amber-500 text-gray-900 hover:bg-amber-400 font-bold py-6 text-base transition-all duration-300">
-                            Log In
+                        <Button 
+                            type="submit" 
+                            className={`w-full font-bold py-6 text-base transition-all duration-300 ${selectedRole === 'Admin' ? 'bg-red-500 hover:bg-red-400 text-gray-900' : 'bg-amber-500 hover:bg-amber-400 text-gray-900'}`}
+                        >
+                            {selectedRole === 'Admin' ? 'Access Admin Console' : 'Log In to Dashboard'}
                         </Button>
                     </form>
                     
                     {/* 3. Registration Link */}
                     <p className="mt-8 text-center text-sm text-gray-400">
                         Don't have a creator account?{' '}
-                        {/* Links to the Profile/Registration page */}
-                        <Link to="/profile" className="font-semibold text-amber-500 hover:text-amber-400 transition-colors">
+                        <Link to="/register" className="font-semibold text-amber-500 hover:text-amber-400 transition-colors">
                             Apply to be a Creative
                         </Link>
                     </p>
