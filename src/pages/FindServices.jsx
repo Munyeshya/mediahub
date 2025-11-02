@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Star, Filter, Search, User, CheckCircle, ArrowLeft, ArrowRight } from "lucide-react";
+import { Star, Filter, Search, User, CheckCircle, ArrowLeft, ArrowRight, Tag } from "lucide-react"; // <-- Added Tag icon
 
 // --- Mock Data ---
 const CATEGORIES = ['Photography', 'Videography', 'Audio Production', 'Graphics & Design', 'Web Development'];
@@ -20,6 +20,8 @@ const MOCK_CREATIVES = Array.from({ length: 16 }, (_, i) => ({
     priceLevel: PRICE_LEVELS[i % PRICE_LEVELS.length],
     bookings: (10 + i * 5) + '+',
     isVerified: i % 3 === 0,
+    // 💥 UPGRADE: Added mock skill tags for demonstration
+    skills: ['Figma', 'Premiere Pro', 'Drone Ops', 'SEO', 'Mobile', 'Events'].sort(() => 0.5 - Math.random()).slice(0, 3) 
 }));
 
 // --- 1. Filter Components (Left Sidebar) ---
@@ -103,6 +105,10 @@ function FiltersPanel() {
 // --- 2. Service Card Component (ULTRA COMPACT FINAL DESIGN) ---
 
 function ServiceCard({ creative }) {
+    // Determine how many tags to show and if an overflow count is needed
+    const visibleSkills = creative.skills.slice(0, 2); // Show first 2 tags
+    const overflowCount = creative.skills.length - visibleSkills.length;
+
     return (
         <Card 
             className="bg-gray-800 rounded-xl border border-gray-700 hover:border-amber-500/50 
@@ -131,6 +137,8 @@ function ServiceCard({ creative }) {
 
             {/* Content (Ultra-Compact) */}
             <CardContent className="p-3 flex-grow flex flex-col justify-between">
+                
+                {/* Rating & Price */}
                 <div className="flex justify-between items-center mb-3">
                     {/* Rating Section (Compact) */}
                     <div className="flex items-center space-x-1">
@@ -144,7 +152,23 @@ function ServiceCard({ creative }) {
                         {creative.priceLevel}
                     </p>
                 </div>
-                
+
+                {/* 💥 UPGRADE: Skill Tags Section */}
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                    {visibleSkills.map(skill => (
+                        <span key={skill} className="text-xs font-medium bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20 flex items-center">
+                            <Tag className="h-3 w-3 mr-1" />{skill}
+                        </span>
+                    ))}
+                    {/* Overflow Tag */}
+                    {overflowCount > 0 && (
+                        <span className="text-xs font-medium bg-gray-700 text-gray-400 px-2 py-0.5 rounded-full border border-gray-600">
+                            +{overflowCount} more
+                        </span>
+                    )}
+                </div>
+                {/*  (Illustrates the compact tag design) */}
+
                 {/* Button: Icon only, smaller size */}
                 <Button 
                     className="w-full bg-amber-500 text-gray-900 hover:bg-amber-400 font-bold mt-auto h-8 text-sm p-0 flex justify-center items-center"
@@ -157,8 +181,8 @@ function ServiceCard({ creative }) {
     );
 }
 
-// --- 3. Pagination Component ---
-
+// --- 3. Pagination Component (Unchanged) ---
+// ... (PaginationControls component remains the same) ...
 function PaginationControls({ currentPage, totalPages, onPageChange }) {
     return (
         <div className="flex justify-between items-center mt-10">
@@ -185,7 +209,7 @@ function PaginationControls({ currentPage, totalPages, onPageChange }) {
 }
 
 
-// --- 4. Main FindServices Page Component ---
+// --- 4. Main FindServices Page Component (Unchanged) ---
 
 export function FindServices() {
     // Mock state for results and pagination
