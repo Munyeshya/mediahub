@@ -1,18 +1,23 @@
 // src/pages/dashboard/ManageGivers.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
-// 💥 NEW: Import Link from react-router-dom
 import { Link } from 'react-router-dom'; 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from '@/components/ui/input';
-// 💥 REMOVED: Dialog imports
-import { Eye, CheckCircle, Ban, Search, Info, RotateCw } from 'lucide-react'; 
+// 💥 NEW: Select component for filters
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Eye, CheckCircle, Ban, Search, Info, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react'; 
 
-// Import the database functions
 import { fetchGivers, updateGiverStatus } from '../../logic/db'; 
+
+// --- CONFIGURATION CONSTANTS ---
+const ITEMS_PER_PAGE = 5; // Number of rows to show per page
+const STATUS_OPTIONS = ['All', 'Active', 'Pending', 'Suspended'];
+const SERVICE_OPTIONS = ['All', 'Photographer', 'Videographer', 'Music Producer', 'Graphic Designer', '3D Modeler'];
+// -----------------------------
 
 // Helper to determine badge style (no change)
 const getStatusBadge = (status) => {
@@ -29,12 +34,19 @@ const getStatusBadge = (status) => {
 };
 
 export function ManageGivers() {
+    // Core Data States
     const [givers, setGivers] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // 💥 REMOVED: View Modal state (viewGiver, isViewModalOpen)
+    // 💥 Filter States
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
+    const [serviceFilter, setServiceFilter] = useState('All');
 
+    // 💥 Pagination States
+    const [currentPage, setCurrentPage] = useState(1);
+    
     // EFFECT: Fetch data on component mount (no change)
     useEffect(() => {
         const loadGivers = async () => {
@@ -53,28 +65,84 @@ export function ManageGivers() {
 
         loadGivers();
     }, []); 
+
+    // 💥 Memoized Logic for Filtering and Pagination
+    const filteredAndPaginatedGivers = useMemo(() => {
+        let filteredGivers = givers;
+
+        // 1. Apply Status Filter
+        if (statusFilter !== 'All') {
+            filteredGivers = filteredGivers.filter(g => g.status === statusFilter);
+        }
+
+        // 2. Apply Service Filter
+        if (serviceFilter !== 'All') {
+            filteredGivers = filteredGivers.filter(g => g.service === serviceFilter);
+        }
+        
+        // 3. Apply Search Term (Name or Email)
+        if (searchTerm) {
+            const lowerCaseSearch = searchTerm.toLowerCase();
+            filteredGivers = filteredGivers.filter(
+                g => g.name.toLowerCase().includes(lowerCaseSearch) || 
+                     g.email.toLowerCase().includes(lowerCaseSearch)
+            );
+        }
+        
+        // --- PAGINATION CALCULATION ---
+        const totalItems = filteredGivers.length;
+        const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+        // Ensure the current page is valid after filtering
+        const safeCurrentPage = Math.min(currentPage, totalPages > 0 ? totalPages : 1);
+        
+        const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+
+        const paginatedGivers = filteredGivers.slice(startIndex, endIndex);
+
+        return {
+            paginatedGivers,
+            totalItems,
+            totalPages,
+            safeCurrentPage // Return the safe, adjusted page number
+        };
+    }, [givers, statusFilter, serviceFilter, searchTerm, currentPage]);
+
+    const { paginatedGivers, totalItems, totalPages, safeCurrentPage } = filteredAndPaginatedGivers;
+
+    // Handler to change page (used by buttons and filter change)
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= totalPages) {
+            setCurrentPage(page);
+        }
+    };
     
-    // Unified Action Handler (no change in logic, only updated to remove optimistic 'Updating...' state for simplicity)
+    // Reset page to 1 whenever filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter, serviceFilter]);
+
+
     const handleAction = async (id, action) => {
         const newStatus = action === 'Approve' ? 'Active' : (action === 'Suspend' ? 'Suspended' : 'Active');
         const giverToUpdate = givers.find(g => g.id === id);
 
         if (!giverToUpdate) return;
-        
         const originalStatus = giverToUpdate.status;
 
         try {
-            // 1. Call the database function
+            // Call the database function
             await updateGiverStatus(id, newStatus);
 
-            // 2. Finalize local state update on success
+            // Finalize local state update on success
             setGivers(prevGivers => 
                 prevGivers.map(giver => 
                     giver.id === id ? { ...giver, status: newStatus } : giver
                 )
             );
 
-            // 3. Show Toast Notification
+            // Show Toast Notification
             const message = action === 'Approve' 
                 ? `✅ Giver ${giverToUpdate.name} has been approved and is now Active.` 
                 : `❌ Giver ${giverToUpdate.name} has been suspended.`;
@@ -96,9 +164,6 @@ export function ManageGivers() {
         }
     };
 
-    // 💥 REMOVED: handleView function
-
-    // Rendering Logic for Loading/Error (no change)
     const renderContent = () => {
         if (isLoading) {
             return (
@@ -118,11 +183,11 @@ export function ManageGivers() {
             );
         }
 
-        if (givers.length === 0) {
+        if (totalItems === 0) {
             return (
                 <div className="text-center p-8 text-gray-400 bg-gray-700/50 rounded-lg border border-gray-600">
                     <h3 className="text-lg font-bold">No Givers Found</h3>
-                    <p>The system has no creative accounts to display.</p>
+                    <p>No creative accounts matched your current filters.</p>
                 </div>
             );
         }
@@ -130,7 +195,7 @@ export function ManageGivers() {
         // --- Main Table Render ---
         return (
             <Table>
-                <TableCaption className="text-gray-400">A list of all registered creative accounts.</TableCaption>
+                <TableCaption className="text-gray-400">Showing {paginatedGivers.length} of {totalItems} filtered creatives.</TableCaption>
                 <TableHeader>
                     <TableRow className="border-gray-700 hover:bg-gray-700/50 text-gray-300">
                         <TableHead className="w-[100px]">ID</TableHead>
@@ -142,7 +207,7 @@ export function ManageGivers() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {givers.map((giver) => (
+                    {paginatedGivers.map((giver) => (
                         <TableRow key={giver.id} className="border-gray-700 hover:bg-gray-800/50">
                             <TableCell className="font-medium text-gray-300">{giver.id}</TableCell>
                             <TableCell className="text-white">{giver.name}</TableCell>
@@ -151,7 +216,7 @@ export function ManageGivers() {
                             <TableCell>{getStatusBadge(giver.status)}</TableCell>
                             <TableCell className="text-right space-x-2">
                                 
-                                {/* 💥 CRITICAL CHANGE: Use Link to navigate to the details page */}
+                                {/* VIEW BUTTON - Link to Details Page */}
                                 <Link to={`/dashboard/admin/givers/${giver.id}`} >
                                     <Button 
                                         size="icon" 
@@ -206,25 +271,79 @@ export function ManageGivers() {
             <h2 className="text-3xl font-bold text-white">Manage Creative Accounts</h2>
             
             <Card className="bg-gray-800 border-gray-700">
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-xl text-white">Giver List ({givers.length})</CardTitle>
-                    <div className="flex space-x-2">
-                        <div className="relative">
+                <CardHeader className="flex flex-col space-y-4">
+                    <CardTitle className="text-xl text-white">Giver List</CardTitle>
+                    
+                    {/* 💥 FILTER BAR */}
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        
+                        {/* Search Input */}
+                        <div className="relative flex-1 min-w-[200px]">
                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                            <Input placeholder="Search Givers..." className="pl-10 bg-gray-700 border-gray-600 text-white" />
+                            <Input 
+                                placeholder="Search by name or email..." 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10 bg-gray-700 border-gray-600 text-white w-full" 
+                            />
                         </div>
-                        <Button className="bg-amber-500 hover:bg-amber-600 text-gray-900">
-                            View Pending ({givers.filter(g => g.status === 'Pending').length})
-                        </Button>
+
+                        {/* Status Filter */}
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-[180px] bg-gray-700 border-gray-600 text-white">
+                                <SelectValue placeholder="Filter by Status" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                                {STATUS_OPTIONS.map(status => (
+                                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
+                        {/* Service Filter */}
+                        <Select value={serviceFilter} onValueChange={setServiceFilter}>
+                            <SelectTrigger className="w-[180px] bg-gray-700 border-gray-600 text-white">
+                                <SelectValue placeholder="Filter by Service" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                                {SERVICE_OPTIONS.map(service => (
+                                    <SelectItem key={service} value={service}>{service}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </CardHeader>
                 <CardContent>
                     {renderContent()}
+                    
+                    {/* 💥 PAGINATION CONTROLS */}
+                    {totalItems > 0 && totalPages > 1 && (
+                        <div className="flex justify-between items-center pt-4 border-t border-gray-700 mt-4">
+                            <p className="text-sm text-gray-400">
+                                Page {safeCurrentPage} of {totalPages}
+                            </p>
+                            <div className="space-x-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handlePageChange(safeCurrentPage - 1)}
+                                    disabled={safeCurrentPage === 1}
+                                    className="text-amber-500 border-amber-500 hover:bg-amber-900/20"
+                                >
+                                    <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    onClick={() => handlePageChange(safeCurrentPage + 1)}
+                                    disabled={safeCurrentPage === totalPages}
+                                    className="text-amber-500 border-amber-500 hover:bg-amber-900/20"
+                                >
+                                    Next <ChevronRight className="w-4 h-4 ml-1" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
-
-            {/* 💥 REMOVED: The Giver Details Dialog/Modal structure is deleted */}
-            
         </div>
     );
 }
