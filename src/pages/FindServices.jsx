@@ -29,7 +29,7 @@ const MOCK_CREATIVES = Array.from({ length: 16 }, (_, i) => ({
 function FiltersPanel() {
     return (
         // Sticky top-20 keeps the filter panel visible as the user scrolls the results
-        <div className="p-4 bg-gray-800 rounded-xl shadow-xl border border-gray-700 sticky top-20">
+        <div className="p-4 bg-gray-800 rounded-xl shadow-xl border border-gray-700 sticky top-20 ">
             <h2 className="text-2xl font-bold text-amber-500 mb-6 flex items-center">
                 <Filter className="h-6 w-6 mr-2" /> Filters
             </h2>
@@ -185,7 +185,7 @@ function ServiceCard({ creative }) {
 // ... (PaginationControls component remains the same) ...
 function PaginationControls({ currentPage, totalPages, onPageChange }) {
     return (
-        <div className="flex justify-between items-center mt-10">
+        <div className="flex justify-between items-center mt-10 ">
             <Button 
                 variant="outline" 
                 className="text-amber-500 border-amber-500 hover:bg-amber-900/20 disabled:opacity-50"
@@ -219,7 +219,10 @@ export function FindServices() {
     const currentPage = 1; // Start on page 1
 
     return (
-        <div className="bg-gray-900 text-white min-h-screen">
+        <div className="bg-gray-900 text-white min-h-screen bg-abstract-motion
+     animate-spark-1 animate-spark-2 animate-spark-3 animate-spark-4 animate-spark-5 
+     animate-spark-6 animate-spark-7 animate-spark-8 animate-spark-9 animate-spark-10 
+     animate-spark-11 animate-spark-12 animate-spark-13 animate-spark-14 animate-spark-15">
             <div className="mx-auto max-w-7xl px-8 py-12 md:py-16">
                 
                 <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-12 border-b-2 border-amber-500/50 pb-4">

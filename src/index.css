@@ -1,12 +1,32 @@
 @import "tailwindcss";
 /* Add any other @import or @layer directives here */
 
-/* 💥 UPDATED GLOBAL CSS FOR MULTI-LAYER SPARK BACKGROUND */
+/* --- PURE CSS KEYFRAMES FOR ABSTRACT MOTION --- */
 
+/* Keyframe set 1: Subtle shift down-right */
+@keyframes moveA {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 2% 3%; }
+}
+
+/* Keyframe set 2: Subtle shift up-left */
+@keyframes moveB {
+    0% { background-position: 0% 0%; }
+    100% { background-position: -3% 1%; }
+}
+
+/* Keyframe set 3: Subtle shift left-down */
+@keyframes moveC {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 1% -2%; }
+}
+
+
+/* 💥 UPDATED GLOBAL CSS FOR MULTI-LAYER SPARK BACKGROUND (PURE CSS ANIMATION) */
 .bg-abstract-motion {
     background-color: #111827; /* Base dark background */
     
-    /* 💥 15 LAYERS OF GRADIENTS */
+    /* 💥 15 LAYERS OF GRADIENTS (UNCHANGED) */
     background-image: 
         radial-gradient(circle at 5% 15%, rgba(255, 255, 255, 0.4) 1px, transparent 1.5px), 
         radial-gradient(circle at 15% 25%, rgba(251, 191, 36, 0.3) 1px, transparent 1.5px),
@@ -24,15 +44,32 @@
         radial-gradient(circle at 80% 20%, rgba(251, 191, 36, 0.3) 1px, transparent 1.5px),
         radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.2) 1px, transparent 1.5px);
     
-    /* 💥 15 UNIQUE SIZES */
+    /* 💥 15 UNIQUE SIZES (UNCHANGED) */
     background-size: 
         100px 100px, 140px 140px, 180px 180px, 220px 220px, 260px 260px,
         300px 300px, 340px 340px, 380px 380px, 420px 420px, 460px 460px,
         120px 120px, 400px 400px, 160px 160px, 280px 280px, 320px 320px;
     
-    background-attachment: fixed; /* Essential for smooth, stable animation */
+    background-attachment: fixed;
+    background-repeat: repeat; /* Ensures the pattern repeats */
     position: relative; 
     z-index: 1; 
-}
-/* Your custom CSS (like .bg-abstract-motion) goes below these three lines */
 
+    /* 💥 PURE CSS ANIMATION: Apply different animations to all 15 background layers */
+    animation: 
+        moveA 20s linear infinite alternate,      /* Layer 1 */
+        moveB 18s ease-in-out infinite,          /* Layer 2 */
+        moveC 25s linear infinite alternate,      /* Layer 3 */
+        moveA 15s ease-out infinite,             /* Layer 4 */
+        moveB 22s linear infinite alternate,      /* Layer 5 */
+        moveC 28s ease-in infinite,              /* Layer 6 */
+        moveA 17s linear infinite,               /* Layer 7 */
+        moveB 23s ease-out infinite alternate,    /* Layer 8 */
+        moveC 19s linear infinite,               /* Layer 9 */
+        moveA 21s ease-in-out infinite alternate, /* Layer 10 */
+        moveB 16s linear infinite,               /* Layer 11 */
+        moveC 24s ease-out infinite alternate,    /* Layer 12 */
+        moveA 26s linear infinite,               /* Layer 13 */
+        moveB 14s ease-in infinite alternate,     /* Layer 14 */
+        moveC 27s linear infinite;               /* Layer 15 */
+}
