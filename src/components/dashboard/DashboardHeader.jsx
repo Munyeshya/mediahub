@@ -1,15 +1,38 @@
-// src/components/dashboard/DashboardHeader.jsx (A11y Compliant with SheetTitle)
+// src/components/dashboard/DashboardHeader.jsx
 import { Bell, Settings, User, Menu, LogOut } from "lucide-react"; 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { DashboardSidebar } from "./DashboardSidebar";
-import { useAuth } from '../../logic/auth'; // 💥 Import useAuth
+import { useAuth } from '../../logic/auth'; // Import useAuth
+// 💥 NEW: Import toast
+import { toast } from 'react-toastify'; 
 
 export function DashboardHeader({ title = "Dashboard", role = "Admin" }) {
-    const { logout } = useAuth(); // 💥 Get the logout function
+    const { logout } = useAuth(); 
     
     // Tailwind CSS Utility for Visually Hiding Content (Commonly used in Shadcn projects)
     const visuallyHidden = "sr-only"; 
+
+    // 💥 NEW: Handle Logout with Toast Notification
+    const handleLogout = () => {
+        // Configuration for React-Toastify
+        const toastConfig = {
+            position: "bottom-right",
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: "dark",
+            autoClose: 1500, // Short display time for a simple action
+        };
+
+        // 1. Show Success Toast
+        toast.success(`You have been logged out. See you soon! 👋`, toastConfig);
+
+        // 2. Execute Logout
+        // The logout function (from useAuth) should clear state/storage and redirect to /login
+        logout(); 
+    };
 
     return (
         <header className="sticky top-0 z-20 w-full p-4 bg-gray-900 border-b border-gray-700 flex justify-between items-center shadow-lg">
@@ -67,7 +90,8 @@ export function DashboardHeader({ title = "Dashboard", role = "Admin" }) {
                 
                 {/* 💥 LOGOUT BUTTON */}
                 <Button 
-                    onClick={logout} // 💥 Calls the logout function from useAuth
+                    // 💥 Use the new handler
+                    onClick={handleLogout} 
                     variant="ghost" 
                     size="icon" 
                     className="text-red-500 hover:bg-gray-700 hover:text-red-400"
