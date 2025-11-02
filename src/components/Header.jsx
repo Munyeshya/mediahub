@@ -28,7 +28,7 @@ export function Header() {
         {/* Logo/Brand Name (Visible on all screen sizes) */}
         <Link to="/" className="flex items-center space-x-2">
           <MountainIcon className="h-6 w-6 text-amber-500" />
-          <span className="text-xl font-bold text-white">MediaHub Rwanda</span>
+          <span className="text-2xl font-bold text-white">MediaHub</span>
         </Link>
 
         {/* --- Desktop Navigation --- */}
@@ -37,7 +37,7 @@ export function Header() {
             <Link
               key={item.name}
               to={item.href}
-              className="text-sm font-medium transition-colors text-gray-300 hover:text-amber-500"
+              className="text-md font-medium transition-colors text-gray-300 hover:text-amber-500"
             >
               {item.name}
             </Link>
