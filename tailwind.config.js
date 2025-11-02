@@ -47,7 +47,10 @@ export default {
         sparkMovement14: { '0%': { 'background-position': '5% 75%' }, '100%': { 'background-position': '1000% 75%' } },
         // #15: Fast Vertical Drift (Small amplitude)
         sparkMovement15: { '0%': { 'background-position': '75% 5%' }, '100%': { 'background-position': '75% 1000%' } },
-        
+        floatSubtle: {
+                '0%, 100%': { transform: 'translateY(0px)' },
+                '50%': { transform: 'translateY(-6px)' }, /* Adjusts vertical float distance */
+            },
         // Existing keyframes for card slide-in (PRESERVED)
         "slide-in": {
           "0%": {
@@ -65,6 +68,7 @@ export default {
       animation: {
         // Existing animation utility for card slide-in (PRESERVED)
         "slide-in": "slide-in 0.6s ease-out forwards",
+        'float-subtle': 'floatSubtle 3.5s ease-in-out infinite', /* Slow, smooth looping */
 
         // The 15 new spark utilities
         'spark-1': 'sparkMovement1 110s linear infinite alternate',
