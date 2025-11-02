@@ -5,6 +5,7 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { ManageGivers } from './ManageGivers';
 import { GiverDetails } from './GiverDetails';
+import { ManageServices } from './ManageServices';
 
 // Placeholder Component for the Main Overview
 function AdminHome() {
@@ -60,7 +61,7 @@ export function AdminDashboard() {
                 <Route path="givers/:giverId" element={<GiverDetails />} />
                 
                 {/* Upcoming Manage Services page */}
-                {/* <Route path="services" element={<ManageServices />} /> */} 
+                <Route path="services" element={<ManageServices />} />
                 
             </Route>
         </Routes>

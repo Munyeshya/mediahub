@@ -165,3 +165,93 @@ export async function updateGiverStatus(id, status) {
         throw new Error("Could not update status on the server.");
     }
 }
+
+// src/logic/db.js (Partial Update - Add Service Functions)
+
+/**
+ * Simulates fetching the list of Givers from the backend API.
+ * (Existing function - no change)
+ */
+export async function fetchGivers() {
+    // ... (content of fetchGivers remains the same)
+}
+
+/**
+ * Simulates updating a Giver's status.
+ * (Existing function - no change)
+ */
+export async function updateGiverStatus(id, status) {
+    // ... (content of updateGiverStatus remains the same)
+}
+
+
+// -------------------------------------------------------------
+// 💥 NEW: SERVICE MANAGEMENT FUNCTIONS
+// -------------------------------------------------------------
+
+/**
+ * Simulates fetching the list of Services from the backend API.
+ */
+export async function fetchServices() {
+    // 💥 NOTE: Replace this mock implementation with your actual API call: GET /api/admin/services
+    const mockServicesData = [
+        { id: 1, name: "Videographer", description: "All forms of video production, editing, and cinematography.", active: true },
+        { id: 2, name: "Photographer", description: "Studio and event photography, retouching, and drone stills.", active: true },
+        { id: 3, name: "Music Producer", description: "Beat making, mixing, and mastering for all genres.", active: true },
+        { id: 4, name: "Graphic Designer", description: "Logo design, branding, and digital asset creation.", active: false },
+    ];
+    
+    try {
+        await new Promise(resolve => setTimeout(resolve, 1500)); 
+        return mockServicesData;
+    } catch (error) {
+        console.error("Error fetching services:", error);
+        throw new Error("Could not connect to the backend server to fetch services.");
+    }
+}
+
+/**
+ * Simulates adding a new service.
+ */
+export async function addService(newService) {
+    // 💥 NOTE: Replace this mock implementation with your actual API call: POST /api/admin/services
+    try {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const addedService = { ...newService, id: Math.floor(Math.random() * 1000) + 100 };
+        console.log(`[DB SUCCESS] Added Service: ${addedService.name}`);
+        return addedService;
+    } catch (error) {
+        console.error("Error adding service:", error);
+        throw new Error("Could not add service to the server.");
+    }
+}
+
+/**
+ * Simulates updating an existing service.
+ */
+export async function updateService(updatedService) {
+    // 💥 NOTE: Replace this mock implementation with your actual API call: PUT /api/admin/services/:id
+    try {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log(`[DB SUCCESS] Updated Service ID ${updatedService.id} to Name: ${updatedService.name}`);
+        return updatedService;
+    } catch (error) {
+        console.error("Error updating service:", error);
+        throw new Error("Could not update service on the server.");
+    }
+}
+
+/**
+ * Simulates deleting a service.
+ */
+export async function deleteService(id) {
+    // 💥 NOTE: Replace this mock implementation with your actual API call: DELETE /api/admin/services/:id
+    try {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log(`[DB SUCCESS] Deleted Service ID ${id}`);
+        return true;
+    } catch (error) {
+        console.error("Error deleting service:", error);
+        throw new Error("Could not delete service from the server.");
+    }
+}
