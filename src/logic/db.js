@@ -91,3 +91,77 @@ export const logout = () => {
     console.log("User logged out. Auth state cleared.");
     return true; // Indicate success
 };
+
+// src/logic/db.js
+
+/**
+ * Simulates fetching the list of Givers from the backend API.
+ * In a real application, this would use fetch or Axios to call a protected endpoint.
+ * @returns {Promise<Array>} A promise that resolves to an array of Giver objects.
+ */
+export async function fetchGivers() {
+    // 💥 NOTE: Replace this mock implementation with your actual API call.
+    
+    // Example placeholder data structure (matching the previous component structure)
+    const mockGiversData = [
+        { id: 101, name: "Alice Murenzi", email: "alice@creative.com", service: "Videographer", status: "Pending", joined: "2024-09-15" },
+        { id: 102, name: "Bob Rwanda Beats", email: "bob@beats.com", service: "Music Producer", status: "Active", joined: "2023-11-01" },
+        { id: 103, name: "Clara Photos", email: "clara@photos.com", service: "Photographer", status: "Suspended", joined: "2024-01-20" },
+        { id: 104, name: "David Designer", email: "david@design.com", service: "Graphic Designer", status: "Pending", joined: "2024-10-25" },
+        { id: 105, name: "Emma Architect", email: "emma@archi.com", service: "3D Modeler", status: "Active", joined: "2024-05-10" },
+    ];
+    
+    try {
+        // --- REAL API CALL Placeholder ---
+        // const response = await fetch('/api/admin/givers', { 
+        //     method: 'GET',
+        //     headers: {
+        //         'Authorization': `Bearer ${localStorage.getItem('token')}` 
+        //     }
+        // });
+
+        // if (!response.ok) {
+        //     throw new Error('Failed to fetch givers list.');
+        // }
+        // const data = await response.json();
+        // return data.givers; 
+        
+        // --- MOCK SIMULATION ---
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+        return mockGiversData;
+
+    } catch (error) {
+        console.error("Error fetching givers:", error);
+        throw new Error("Could not connect to the backend server.");
+    }
+}
+
+/**
+ * Simulates updating a Giver's status.
+ * @param {number} id - The ID of the giver to update.
+ * @param {string} status - The new status ('Active' or 'Suspended').
+ * @returns {Promise<boolean>} A promise that resolves to true on success.
+ */
+export async function updateGiverStatus(id, status) {
+    // 💥 NOTE: Replace this mock implementation with your actual API call.
+    try {
+        // --- REAL API CALL Placeholder ---
+        // const response = await fetch(`/api/admin/givers/${id}/status`, { 
+        //     method: 'PUT',
+        //     headers: { 'Content-Type': 'application/json', 'Authorization': ... },
+        //     body: JSON.stringify({ status })
+        // });
+        
+        // if (!response.ok) {
+        //     throw new Error(`Failed to update status for ID ${id}.`);
+        // }
+
+        // --- MOCK SIMULATION ---
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
+        console.log(`[DB SUCCESS] Updated Giver ID ${id} to Status: ${status}`);
+        return true; 
+    } catch (error) {
+        console.error("Error updating giver status:", error);
+        throw new Error("Could not update status on the server.");
+    }
+}

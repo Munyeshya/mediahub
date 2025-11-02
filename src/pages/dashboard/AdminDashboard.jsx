@@ -4,6 +4,7 @@ import { Routes, Route, Outlet } from 'react-router-dom';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { ManageGivers } from './ManageGivers';
+import { GiverDetails } from './GiverDetails';
 
 // Placeholder Component for the Main Overview
 function AdminHome() {
@@ -56,6 +57,7 @@ export function AdminDashboard() {
                 {/* Default route: /dashboard/admin */}
                 <Route index element={<AdminHome />} /> 
                 <Route path="givers" element={<ManageGivers />} />
+                <Route path="givers/:giverId" element={<GiverDetails />} />
                 
                 {/* Upcoming Manage Services page */}
                 {/* <Route path="services" element={<ManageServices />} /> */} 
