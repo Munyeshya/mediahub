@@ -1,17 +1,36 @@
 @import "tailwindcss";
+/* Add any other @import or @layer directives here */
 
-
-/* Custom CSS in src/index.css */
+/* 💥 UPDATED GLOBAL CSS FOR MULTI-LAYER SPARK BACKGROUND */
 
 .bg-abstract-motion {
-    background-color: #111827;
+    background-color: #111827; /* Base dark background */
+    
+    /* 💥 15 LAYERS OF GRADIENTS */
     background-image: 
-        radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.3) 1px, transparent 1.5px), 
-        radial-gradient(circle at 90% 80%, rgba(251, 191, 36, 0.35) 1px, transparent 1.5px),
-        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.2) 1px, transparent 1.5px);
+        radial-gradient(circle at 5% 15%, rgba(255, 255, 255, 0.4) 1px, transparent 1.5px), 
+        radial-gradient(circle at 15% 25%, rgba(251, 191, 36, 0.3) 1px, transparent 1.5px),
+        radial-gradient(circle at 25% 35%, rgba(255, 255, 255, 0.2) 1px, transparent 1.5px),
+        radial-gradient(circle at 35% 45%, rgba(251, 191, 36, 0.4) 1px, transparent 1.5px),
+        radial-gradient(circle at 45% 55%, rgba(255, 255, 255, 0.3) 1px, transparent 1.5px),
+        radial-gradient(circle at 55% 65%, rgba(251, 191, 36, 0.25) 1px, transparent 1.5px),
+        radial-gradient(circle at 65% 75%, rgba(255, 255, 255, 0.35) 1px, transparent 1.5px),
+        radial-gradient(circle at 75% 85%, rgba(251, 191, 36, 0.3) 1px, transparent 1.5px),
+        radial-gradient(circle at 85% 95%, rgba(255, 255, 255, 0.2) 1px, transparent 1.5px),
+        radial-gradient(circle at 95% 5%, rgba(251, 191, 36, 0.4) 1px, transparent 1.5px),
+        radial-gradient(circle at 5% 70%, rgba(255, 255, 255, 0.3) 1px, transparent 1.5px), 
+        radial-gradient(circle at 70% 5%, rgba(251, 191, 36, 0.2) 1px, transparent 1.5px),
+        radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.4) 1px, transparent 1.5px),
+        radial-gradient(circle at 80% 20%, rgba(251, 191, 36, 0.3) 1px, transparent 1.5px),
+        radial-gradient(circle at 50% 100%, rgba(255, 255, 255, 0.2) 1px, transparent 1.5px);
     
-    background-size: 300px 300px; 
+    /* 💥 15 UNIQUE SIZES */
+    background-size: 
+        100px 100px, 140px 140px, 180px 180px, 220px 220px, 260px 260px,
+        300px 300px, 340px 340px, 380px 380px, 420px 420px, 460px 460px,
+        120px 120px, 400px 400px, 160px 160px, 280px 280px, 320px 320px;
     
+    background-attachment: fixed; /* Essential for smooth, stable animation */
     position: relative; 
     z-index: 1; 
 }

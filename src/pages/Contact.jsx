@@ -23,7 +23,10 @@ export function Contact() {
 
   return (
     // Applied the custom background class with animation utility
-    <div className="bg-gray-900 text-white min-h-screen bg-abstract-motion animate-abstract-move">
+    <div className="bg-gray-900 text-white min-h-screen overflow-x-hidden bg-abstract-motion
+     animate-spark-1 animate-spark-2 animate-spark-3 animate-spark-4 animate-spark-5 
+     animate-spark-6 animate-spark-7 animate-spark-8 animate-spark-9 animate-spark-10 
+     animate-spark-11 animate-spark-12 animate-spark-13 animate-spark-14 animate-spark-15">
       {/* Set wide container (max-w-6xl) for side spacing */}
       <div className="mx-auto max-w-6xl px-6 py-12 md:py-20"> 
         

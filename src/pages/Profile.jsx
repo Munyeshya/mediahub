@@ -40,7 +40,10 @@ export function Profile() {
 
     return (
         // UPDATED: Added bg-abstract-motion and animate-abstract-move
-        <div className="bg-gray-900 text-white min-h-screen overflow-x-hidden bg-abstract-motion animate-abstract-move">
+        <div className="bg-gray-900 text-white min-h-screen overflow-x-hidden bg-abstract-motion
+     animate-spark-1 animate-spark-2 animate-spark-3 animate-spark-4 animate-spark-5 
+     animate-spark-6 animate-spark-7 animate-spark-8 animate-spark-9 animate-spark-10 
+     animate-spark-11 animate-spark-12 animate-spark-13 animate-spark-14 animate-spark-15">
             <div className="mx-auto max-w-5xl px-8 py-12 md:py-16">
                 
                 <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4">
