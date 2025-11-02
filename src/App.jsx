@@ -1,6 +1,7 @@
 // src/App.jsx (CORRECTED STRUCTURE)
 import { Routes, Route, Outlet } from 'react-router-dom'; // 💥 Import Outlet for Layout
-import { Toaster } from 'sonner';
+import { ToastContainer } from 'react-toastify'; // 💥 NEW IMPORT for Toastify Container
+import 'react-toastify/dist/ReactToastify.css'; // 💥 NEW CSS IMPORT for styles
 
 // Public Components
 import { Header } from './components/Header';
@@ -39,8 +40,7 @@ function App() {
     return (
         <>
             {/* Sonner Toaster is a root-level utility, place it outside the main div */}
-            <Toaster position="bottom-right" />
-            
+            <ToastContainer position="bottom-right" theme="dark" />
             <Routes>
                 
                 {/* 💥 ROUTE GROUP A: DASHBOARD ROUTES (Standalone - NO Public Header/Footer) */}

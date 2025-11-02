@@ -1,43 +1,52 @@
-// src/pages/Login.jsx (Unified Login with Role Selection and Sonner)
+// src/pages/Login.jsx (Toast-Only Feedback)
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'react-toastify'; 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; 
-import { toast } from "sonner"; // 💥 Sonner Toast Import
 import { Mail, Lock, LogIn, Chrome, MountainIcon, Users, Shield, Briefcase } from "lucide-react";
 
-// IMPORT THE UNIFIED AUTHENTICATION FUNCTION
+// IMPORT THE UNIFIED AUTHENTICATION FUNCTION (Assumed to be in '@/logic/db')
 import { authenticateLogin } from '@/logic/db'; 
 
 export function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [selectedRole, setSelectedRole] = useState('Client'); // Default to Client
-    const [error, setError] = useState('');
+    // 💥 REMOVED: const [error, setError] = useState('');
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(''); 
+        // 💥 REMOVED: setError(''); 
 
         let result = null;
         let dashboardPath = null;
 
+        // Configuration object for React-Toastify messages
+        const toastConfig = {
+            position: "bottom-right",
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: "dark" // Matches the dark dashboard aesthetic
+        };
+
         try {
-            // CALL THE UNIFIED AUTHENTICATION FUNCTION, passing all necessary data
+            // CALL THE UNIFIED AUTHENTICATION FUNCTION
             result = await authenticateLogin(email, password, selectedRole);
 
             if (result) {
-                // Set the correct redirection path
                 dashboardPath = `/dashboard/${result.role.toLowerCase()}`;
                 
-                // 💥 SUCCESS TOAST (Sonner API)
-                toast.success(`Login Successful! 🎉`, {
-                    description: `Welcome back, ${result.role}. Redirecting you now.`,
-                    duration: 2000,
+                // SUCCESS TOASTIFY CALL
+                toast.success(`Welcome back, ${result.role}! 🎉`, {
+                    ...toastConfig,
+                    autoClose: 2000,
                 });
                 
                 // Delay navigation slightly to let the toast show
@@ -46,28 +55,33 @@ export function Login() {
                 }, 100); 
 
             } else {
-                // 💥 FAILURE TOAST (Sonner API)
-                toast.error("Login Failed 🔒", {
-                    description: `Invalid credentials for the selected role. Please try again.`,
-                    duration: 3000,
+                const failureMessage = `Invalid email or password for ${selectedRole}.`;
+                
+                // FAILURE TOASTIFY CALL now carries the full message
+                toast.error(failureMessage, {
+                    ...toastConfig,
+                    autoClose: 3000,
                 });
-                setError(`Invalid email or password for ${selectedRole}.`);
+                // 💥 REMOVED: setError(failureMessage);
             }
         } catch (err) {
             console.error("Login attempt failed:", err);
-            // 💥 SYSTEM ERROR TOAST (Sonner API)
-            toast.error("System Error", {
-                description: "An unrecoverable authentication service error occurred.",
-                duration: 5000,
+            const systemErrorMessage = 'An error occurred during authentication. Please contact support.';
+            
+            // SYSTEM ERROR TOASTIFY CALL now carries the full message
+            toast.error("System Error 🚨", {
+                ...toastConfig,
+                autoClose: 5000,
+                description: systemErrorMessage,
             });
-            setError('An error occurred during authentication. Please contact support.');
+            // 💥 REMOVED: setError(systemErrorMessage);
         }
     };
 
     return (
         <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center bg-abstract-motion">
             
-            <Card className="w-full max-w-md bg-gray-800 border border-gray-700 shadow-2xl p-4 md:p-8">
+            <Card className="w-full max-w-md bg-gray-800 border border-gray-700 shadow-2xl p-6 md:p-8">
                 <CardHeader className="text-center pb-6">
                     <Link to="/" className="flex items-center justify-center space-x-2 mb-4">
                         <MountainIcon className="h-8 w-8 text-amber-500" />
@@ -130,14 +144,10 @@ export function Login() {
                         </RadioGroup>
                     </div>
 
-                    {error && (
-                        <div className={`p-3 rounded-md mb-4 text-sm border ${selectedRole === 'Admin' ? 'bg-red-900/50 text-red-300 border-red-700' : 'bg-amber-900/50 text-amber-300 border-amber-700'}`}>
-                            {error}
-                        </div>
-                    )}
+                    {/* 💥 REMOVED: Local Error Message Display (Now handled by Toastify) */}
                     
                     {/* Google Sign-In and Divider */}
-                    {/* <Button 
+                    <Button 
                         variant="outline" 
                         className="w-full mb-6 py-6 border-amber-500 text-amber-500 hover:bg-amber-900/20 font-semibold"
                     >
@@ -151,7 +161,7 @@ export function Login() {
                         <div className="relative flex justify-center text-xs uppercase">
                             <span className="bg-gray-800 px-2 text-gray-500">Or use your email</span>
                         </div>
-                    </div> */}
+                    </div>
                     
                     {/* 2. Email/Password Form */}
                     <form onSubmit={handleSubmit} className="space-y-6">
