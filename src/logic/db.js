@@ -225,3 +225,72 @@ export async function updateSystemSettings(newSettings) {
         throw new Error("Could not save system configuration.");
     }
 }
+
+// -------------------------------------------------------------------
+// 4. DASHBOARD OVERVIEW FUNCTIONS (DATA LOGIC)
+// -------------------------------------------------------------------
+
+/**
+ * Simulates complex SQL queries to fetch aggregated data for the Admin Dashboard.
+ * * NOTE: This is where you would execute multiple real DB queries
+ * (e.g., aggregating bookings, counting statuses, calculating revenue).
+ * The returned structure is ready for immediate chart consumption.
+ */
+export async function fetchDashboardOverviewData() {
+    console.log("[DB FETCH] Fetching comprehensive dashboard overview data...");
+    
+    // 🔑 MOCK DATA BASED ON REAL QUERIES:
+    // 1. Total Revenue: SELECT SUM(total_price_RWF) FROM Booking WHERE status = 'Completed';
+    const totalRevenue = 12540000;
+    // 2. Total Bookings: SELECT COUNT(booking_id) FROM Booking;
+    const totalBookings = 78;
+    // 3. Active Givers: SELECT COUNT(giver_id) FROM Service_Giver WHERE is_verified = TRUE;
+    const activeGivers = 45;
+    // 4. New Clients: SELECT COUNT(client_id) FROM Client WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY);
+    const newClientsLast30Days = 12;
+
+    // 5. Monthly Revenue (Chart Data): Aggregation of total_price_RWF by month.
+    const monthlyRevenueData = [
+        { month: 'Jan', revenue: 1200000 },
+        { month: 'Feb', revenue: 1500000 },
+        { month: 'Mar', revenue: 1800000 },
+        { month: 'Apr', revenue: 2100000 },
+        { month: 'May', revenue: 1950000 },
+        { month: 'Jun', revenue: 2500000 },
+    ];
+
+    // 6. Giver Status Distribution: SELECT status, COUNT(giver_id) FROM Service_Giver GROUP BY status;
+    const giverStatusData = [
+        { status: 'Active', count: 45, fill: '#34D399' }, 
+        { status: 'Pending', count: 18, fill: '#FBBF24' }, 
+        { status: 'Suspended', count: 5, fill: '#EF4444' }, 
+    ];
+
+    // 7. Top Services by Booking Count: SELECT T.service_name, COUNT(B.booking_id) FROM Booking B JOIN Service_Type T ... GROUP BY T.service_name ORDER BY count DESC LIMIT 5;
+    const serviceUsageData = [
+        { service: 'Wedding Photo', bookings: 25 },
+        { service: 'Event Video', bookings: 18 },
+        { service: 'Brand Identity', bookings: 12 },
+        { service: 'Portrait Photo', bookings: 10 },
+        { service: 'Music Mixing', bookings: 8 },
+    ];
+
+    try {
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network and processing delay
+        
+        return {
+            keyMetrics: {
+                totalRevenue,
+                totalBookings,
+                activeGivers,
+                newClientsLast30Days,
+            },
+            monthlyRevenueData,
+            giverStatusData,
+            serviceUsageData,
+        };
+    } catch (error) {
+        console.error("Error fetching dashboard overview data:", error);
+        throw new Error("Failed to load aggregated dashboard data.");
+    }
+}
