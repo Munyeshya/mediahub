@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; 
 import { Mail, Lock, LogIn, Chrome, MountainIcon, Users, Shield, Briefcase } from "lucide-react";
+import { FramerParticleBackground } from '../components/common/FramerParticleBackground';
 
 // IMPORT THE UNIFIED AUTHENTICATION FUNCTION
 import { authenticateLogin } from '@/logic/db'; 
@@ -88,8 +89,8 @@ export function Login() {
     };
 
     return (
-        <div className="bg-gray-900 text-white min-h-screen flex items-center justify-center"> 
-            
+        <div className="bg-gray-900 text-white relative min-h-screen flex items-center justify-center "> 
+        <FramerParticleBackground />
             <Card className="w-full max-w-md bg-gray-800 border border-gray-700 shadow-2xl p-6 md:p-8">
                 <CardHeader className="text-center pb-6">
                     <Link to="/" className="flex items-center justify-center space-x-2 mb-4">

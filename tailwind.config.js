@@ -10,7 +10,12 @@ export default {
     extend: {
       // 1. KEYFRAMES (15 unique, multi-directional spark movements)
       keyframes: {
-
+       
+       
+        floatSubtle: {
+                '0%, 100%': { transform: 'translateY(0px)' },
+                '50%': { transform: 'translateY(-6px)' }, /* Adjusts vertical float distance */
+            },
         // Existing keyframes for card slide-in (PRESERVED)
         "slide-in": {
           "0%": {
