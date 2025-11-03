@@ -60,7 +60,7 @@ export function Home() {
         {/* --- 1. Massive Dynamic Hero Section --- */}
         <section className="text-center mb-24 max-w-6xl mx-auto pt-16 pb-20 border-b border-amber-500/30">
             
-            <h1 className="text-5xl sm:text-7xl lg:text-8xl font-extrabold text-white leading-snug mb-6">
+            <h1 className="text-3xl sm:text-7xl lg:text-8xl font-extrabold text-white leading-snug mb-6">
                 Transforming Rwanda's <span className="text-amber-500 block">
                     <TypingText 
                         text="Creative Services" 
@@ -71,7 +71,7 @@ export function Home() {
             </h1>
             
             <p className="text-2xl md:text-2xl text-gray-400 mb-10 max-w-4xl mx-auto">
-                The centralized platform where you can Book Creatives with Confidence.**
+                The centralized platform where you can <span className=" font-bold">Book Creatives with Confidence.</span>
             </p>
             
             <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-8">
