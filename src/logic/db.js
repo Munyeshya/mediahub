@@ -184,3 +184,44 @@ export async function deleteService(id) {
         throw new Error("Could not delete service from the server.");
     }
 }
+
+// --- 5. SYSTEM SETTINGS LOGIC ---
+// NOTE: In a real app, these would call endpoints like GET/PUT /api/admin/settings
+
+// Mock storage for settings
+let mockSystemSettings = {
+    commissionRate: 0.15, // 15%
+    minPayoutRWF: 50000,
+    emailVerificationRequired: true,
+    platformStatus: 'Operational',
+};
+
+/**
+ * Simulates fetching global system settings from the database.
+ */
+export async function getSystemSettings() {
+    try {
+        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
+        console.log("[DB SUCCESS] Fetched system settings.");
+        return { ...mockSystemSettings }; // Return a copy
+    } catch (error) {
+        console.error("Error fetching system settings:", error);
+        throw new Error("Could not retrieve system configuration.");
+    }
+}
+
+/**
+ * Simulates updating global system settings in the database.
+ * @param {object} newSettings - The new settings object to save.
+ */
+export async function updateSystemSettings(newSettings) {
+    try {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+        mockSystemSettings = { ...newSettings }; // Update mock state
+        console.log("[DB SUCCESS] Updated system settings:", mockSystemSettings);
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating system settings:", error);
+        throw new Error("Could not save system configuration.");
+    }
+}

@@ -6,6 +6,7 @@ import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
 import { ManageGivers } from './ManageGivers';
 import { GiverDetails } from './GiverDetails';
 import { ManageServices } from './ManageServices';
+import { SystemSettings } from './SystemSettings';
 
 // Placeholder Component for the Main Overview
 function AdminHome() {
@@ -62,6 +63,7 @@ export function AdminDashboard() {
                 
                 {/* Upcoming Manage Services page */}
                 <Route path="services" element={<ManageServices />} />
+                <Route path="settings" element={<SystemSettings />} />
                 
             </Route>
         </Routes>
