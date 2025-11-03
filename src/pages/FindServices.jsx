@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Star, Filter, Search, User, CheckCircle, ArrowLeft, ArrowRight, Tag } from "lucide-react"; // <-- Added Tag icon
+import { FramerParticleBackground } from '../components/common/FramerParticleBackground';
 
 // --- Mock Data ---
 const CATEGORIES = ['Photography', 'Videography', 'Audio Production', 'Graphics & Design', 'Web Development'];
@@ -30,6 +31,7 @@ function FiltersPanel() {
     return (
         // Sticky top-20 keeps the filter panel visible as the user scrolls the results
         <div className="p-4 bg-gray-800 rounded-xl shadow-xl border border-gray-700 sticky top-20 ">
+            
             <h2 className="text-2xl font-bold text-amber-500 mb-6 flex items-center">
                 <Filter className="h-6 w-6 mr-2" /> Filters
             </h2>
@@ -219,10 +221,8 @@ export function FindServices() {
     const currentPage = 1; // Start on page 1
 
     return (
-        <div className="bg-gray-900 text-white min-h-screen bg-abstract-motion
-     animate-spark-1 animate-spark-2 animate-spark-3 animate-spark-4 animate-spark-5 
-     animate-spark-6 animate-spark-7 animate-spark-8 animate-spark-9 animate-spark-10 
-     animate-spark-11 animate-spark-12 animate-spark-13 animate-spark-14 animate-spark-15">
+        <div className="bg-gray-900 text-white min-h-screen relative">
+        <FramerParticleBackground />
             <div className="mx-auto max-w-7xl px-8 py-12 md:py-16">
                 
                 <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-12 border-b-2 border-amber-500/50 pb-4">

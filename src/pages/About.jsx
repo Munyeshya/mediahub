@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import TypingText from "@/components/TypingText"; // <--- NEW IMPORT
+import { FramerParticleBackground } from '../components/common/FramerParticleBackground';
 
 const competitiveAdvantages = [
   {
@@ -25,17 +26,12 @@ const competitiveAdvantages = [
 
 export function About() {
   return (
-    <div className="bg-gray-900 text-white min-h-screen overflow-x-hidden bg-abstract-motion
-     animate-spark-1 animate-spark-2 animate-spark-3 animate-spark-4 animate-spark-5 
-     animate-spark-6 animate-spark-7 animate-spark-8 animate-spark-9 animate-spark-10 
-     animate-spark-11 animate-spark-12 animate-spark-13 animate-spark-14 animate-spark-15">
-      {/* 💥 CHANGE 1: Increased container width from default (max-w-5xl/6xl) 
-        to max-w-7xl for more side space on large screens. 
-        Retained responsive padding (px-4) for mobile.
-      */}
+    <div className="bg-gray-900 relative text-white min-h-screen overflow-x-hidden ">
+    <FramerParticleBackground />    
       <div className="mx-auto max-w-7xl px-4 py-12 md:py-20">
 
         <div className="text-center mb-16 max-w-3xl mx-auto">
+    
           {/* Typing Effect on the H1 Title */}
           <h1 className="text-4xl md:text-6xl font-extrabold text-amber-500 mb-4">
             <TypingText
@@ -117,6 +113,7 @@ export function About() {
         {/* --- 4. Call to Action (Reduced Component Size) --- */}
         {/* 💥 CHANGE 5: Reduced padding from p-10 md:p-16 to p-8 md:p-12 */}
         <section className="relative overflow-hidden bg-gray-800 p-8 md:p-12 rounded-2xl border border-amber-500/50 shadow-2xl shadow-amber-500/10 mt-16">
+            
             
             {/* Ambient Radial Glow Effect */}
             <div className="absolute inset-0 z-0 opacity-10" 

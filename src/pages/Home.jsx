@@ -7,6 +7,7 @@ import { Camera, Video, Mic, HeartHandshake, Zap, Shield, Search, TrendingUp, X,
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 // Ensure Carousel components are imported
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel"; 
+import { FramerParticleBackground } from '../components/common/FramerParticleBackground';
 
 // --- DATA BLOCKS ---
 const coreProblems = [
@@ -52,10 +53,8 @@ const featuredCreatives = [
 
 export function Home() {
   return (
-    <div className="bg-gray-900 text-white min-h-screen overflow-x-hidden bg-abstract-motion
-     animate-spark-1 animate-spark-2 animate-spark-3 animate-spark-4 animate-spark-5 
-     animate-spark-6 animate-spark-7 animate-spark-8 animate-spark-9 animate-spark-10 
-     animate-spark-11 animate-spark-12 animate-spark-13 animate-spark-14 animate-spark-15">
+    <div className="bg-gray-900 text-white relative min-h-screen overflow-x-hidden ">
+      <FramerParticleBackground />
       <div className="mx-auto max-w-7xl px-8 py-12 md:py-20"> 
         
         {/* --- 1. Massive Dynamic Hero Section --- */}
@@ -71,8 +70,8 @@ export function Home() {
                 </span>
             </h1>
             
-            <p className="text-2xl md:text-3xl text-gray-400 mb-10 max-w-4xl mx-auto">
-                The centralized platform where you can **Book Creatives with Confidence.**
+            <p className="text-2xl md:text-2xl text-gray-400 mb-10 max-w-4xl mx-auto">
+                The centralized platform where you can Book Creatives with Confidence.**
             </p>
             
             <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-8">

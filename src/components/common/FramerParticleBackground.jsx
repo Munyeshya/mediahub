@@ -9,7 +9,7 @@ const Particle = ({ size, position }) => {
 
     return (
         <motion.div
-            // 💥 INCREASED SOLIDITY: Opacity is now 70% in the class utility
+            // INCREASED SOLIDITY: Opacity is 70% in the class utility
             className="absolute rounded-full bg-amber-500/70 blur-[1px]" // Using your theme color (Amber)
             style={{
                 width: size,
@@ -22,7 +22,7 @@ const Particle = ({ size, position }) => {
                 // WIDER DISTANCE: Range is now -50 to +50
                 x: [0, Math.random() * 100 - 50, 0], 
                 y: [0, Math.random() * 100 - 50, 0],
-                // 💥 INCREASED VISIBILITY: Opacity range is now [0.7, 1.0, 0.7] (was [0.5, 0.8, 0.5])
+                // INCREASED VISIBILITY: Opacity range is [0.7, 1.0, 0.7]
                 opacity: [0.7, 1, 0.7], 
             }}
             transition={{
@@ -39,7 +39,7 @@ const Particle = ({ size, position }) => {
 const generateParticles = (count) => {
     return Array.from({ length: count }).map((_, i) => ({
         id: i,
-        // 💥 LARGER SIZE: Particle sizes between 2.5px and 4.5px (was 1.5px and 3.5px)
+        // SIZE REMAINS UNCHANGED: Particle sizes between 2.5px and 4.5px
         size: Math.random() * 2 + 2.5, 
         position: {
             x: Math.random() * 100,
@@ -49,8 +49,8 @@ const generateParticles = (count) => {
 };
 
 // Main component that wraps the particles
-// MORE DOTS: Default particleCount is 150
-export function FramerParticleBackground({ particleCount = 150 }) { 
+// 💥 INCREASED DOTS: Default particleCount is now 300 (was 150)
+export function FramerParticleBackground({ particleCount = 300 }) { 
     const particles = React.useMemo(() => generateParticles(particleCount), [particleCount]);
 
     return (
