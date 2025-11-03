@@ -294,3 +294,4 @@ export async function fetchDashboardOverviewData() {
         throw new Error("Failed to load aggregated dashboard data.");
     }
 }
+
