@@ -102,9 +102,7 @@ export async function logout(userId, role) {
  */
 export async function fetchDashboardOverviewData() {
     try {
-        // ... (Dashboard logic remains unchanged)
-        
-        // 1. Key Metrics Query (Uses subqueries for efficient fetching)
+        // 1. Key Metrics Query
         const keyMetricsQuery = `
             SELECT 
                 (SELECT SUM(total_price_rwf) FROM Booking WHERE status = 'Completed') AS totalRevenue,
@@ -115,7 +113,6 @@ export async function fetchDashboardOverviewData() {
         const keyMetricsResult = await executeSql(keyMetricsQuery);
         const { totalRevenue, totalBookings, activeGivers, newClientsLast30Days } = keyMetricsResult[0] || {};
 
-
         // 2. Monthly Revenue Trend Query
         const monthlyRevenueQuery = `
             SELECT DATE_FORMAT(booked_at, '%b') AS month, SUM(total_price_rwf) AS revenue 
@@ -125,7 +122,6 @@ export async function fetchDashboardOverviewData() {
             ORDER BY MIN(booked_at) ASC;
         `;
         const monthlyRevenueData = await executeSql(monthlyRevenueQuery);
-
 
         // 3. Giver Status Distribution Query
         const giverStatusQuery = `
@@ -138,7 +134,6 @@ export async function fetchDashboardOverviewData() {
             ...row,
             fill: row.status === 'Active' ? '#34D399' : (row.status === 'Pending' ? '#FBBF24' : '#EF4444')
         }));
-
 
         // 4. Top Services by Booking Count Query
         const serviceUsageQuery = `
@@ -216,12 +211,8 @@ export async function fetchGivers() {
 
 /**
  * Updates the status and verification flag for a Service Giver.
- * @param {number} giverId - The ID of the giver to update.
- * @param {string} status - The new status ('Active', 'Pending', 'Suspended').
- * @param {boolean} isVerified - The new verification status.
- * @returns {Promise<boolean>} True if the update was successful.
  */
-export async function updateGiverStatus(giverId, status, isVerified) { // 💥 NEW EXPORT
+export async function updateGiverStatus(giverId, status, isVerified) { 
     const sql = `
         UPDATE Service_Giver 
         SET status = ?, is_verified = ?
@@ -278,7 +269,8 @@ export async function addService(newService) {
     `;
     try {
         const result = await executeSql(sql, [categoryId, name, baseUnit]);
-        return { id: result.insertId, ...newService };
+        // NOTE: result.insertId is the correct way to get the new ID
+        return { id: result.insertId, ...newService }; 
     } catch (error) {
         console.error("Error adding service:", error);
         throw new Error("Could not add service to the database. It might already exist.");
@@ -321,5 +313,89 @@ export async function deleteService(id) {
     } catch (error) {
         console.error("Error deleting service:", error);
         throw new Error("Could not delete service from the database. It may be linked to existing records.");
+    }
+}
+
+
+// -------------------------------------------------------------------
+// 6. ADMIN SYSTEM SETTINGS LOGIC 💥 NEW SECTION
+// -------------------------------------------------------------------
+
+/**
+ * Fetches all system settings as an object of key-value pairs 
+ * from the System_Setting table (assumed structure).
+ * @returns {Promise<object>} The system settings.
+ */
+export async function getSystemSettings() { // 💥 NEW EXPORT
+    const sql = `
+        SELECT setting_key, setting_value 
+        FROM System_Setting;
+    `;
+    try {
+        const rows = await executeSql(sql);
+        
+        // Transform array of rows into a single key-value object
+        const settings = rows.reduce((acc, row) => {
+            acc[row.setting_key] = row.setting_value;
+            return acc;
+        }, {});
+        
+        // Provide defaults and merge with fetched settings
+        return {
+            platform_fee_percent: '10', 
+            min_booking_price_rwf: '5000',
+            max_cancellation_days: '3',
+            ...settings
+        };
+    } catch (error) {
+        // Handle case where the table might not exist yet
+        if (error.message.includes("Unknown table")) {
+            console.warn("System_Setting table not found. Returning default settings.");
+            return {
+                platform_fee_percent: '10', 
+                min_booking_price_rwf: '5000',
+                max_cancellation_days: '3'
+            };
+        }
+        console.error("Error fetching system settings:", error);
+        throw new Error("Could not fetch system settings from the database.");
+    }
+}
+
+/**
+ * Updates a batch of system settings using an UPSERT strategy 
+ * (INSERT...ON DUPLICATE KEY UPDATE) on the System_Setting table.
+ * @param {object} settings - An object of setting_key: setting_value pairs to update.
+ * @returns {Promise<boolean>} True if the update was successful.
+ */
+export async function updateSystemSettings(settings) { // 💥 NEW EXPORT
+    if (Object.keys(settings).length === 0) {
+        return true; // Nothing to update
+    }
+
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        for (const [key, value] of Object.entries(settings)) {
+            const sql = `
+                INSERT INTO System_Setting (setting_key, setting_value) 
+                VALUES (?, ?) 
+                ON DUPLICATE KEY UPDATE setting_value = ?;
+            `;
+            // Execute the UPSERT statement
+            await connection.query(sql, [key, value, value]);
+        }
+
+        await connection.commit();
+        console.log(`[DB SUCCESS] Updated ${Object.keys(settings).length} system settings.`);
+        return true;
+
+    } catch (error) {
+        await connection.rollback();
+        console.error("Error updating system settings (transaction rolled back):", error);
+        throw new Error("Could not save system settings to the database.");
+    } finally {
+        connection.release();
     }
 }
