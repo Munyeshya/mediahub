@@ -67,27 +67,33 @@ export async function authenticateLogin(email, password, role) {
             return null;
     }
 
-    // SQL to fetch the user's ID and hashed password
-    const sql = `SELECT ${idColumn} AS id, password_hash FROM ${tableName} WHERE email = ?;`;
+    const sql = `SELECT ${idColumn} AS id, password_hash FROM ${tableName} WHERE email = ?`;
     
     try {
-        const rows = await executeSql(sql, [email]);
-        const user = rows[0];
+        const rows = await executeSql(sql, [email]); 
 
-        if (user && user.password_hash) {
-            // Compare the plaintext password with the hashed password from the DB
-            const isMatch = await bcrypt.compare(password, user.password_hash);
-            if (isMatch) {
-                // Successful login
-                console.log(`[DB SUCCESS] User ${email} logged in as ${role}.`);
-                return { id: user.id, role };
-            }
+        // 💥 FIX: Check if a user was actually found
+        if (rows.length === 0) {
+            console.log(`[DB Fail] Login attempt: No user found with email ${email} in table ${tableName}.`);
+            return null; // User not found, return null (not a crash)
         }
-        // Authentication failed (no user found or password mismatch)
-        return null;
+        
+        const user = rows[0]; // Now we know user is not undefined
+
+        // Perform the real password comparison using bcrypt
+        const passwordMatch = await bcrypt.compare(password, user.password_hash);
+
+        if (passwordMatch) {
+            console.log(`[DB SUCCESS] User ${user.id} logged in as ${role}.`);
+            return { id: user.id, role }; 
+        } else {
+            console.log(`[DB Fail] Login attempt: Password mismatch for email ${email}.`);
+            return null; // Password mismatch
+        }
+
     } catch (error) {
-        console.error("Error during authentication query:", error);
-        throw new Error("A database error occurred during login.");
+        console.error('Error during authenticateLogin:', error);
+        throw new Error("Authentication failed due to a server error.");
     }
 }
 
