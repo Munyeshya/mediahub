@@ -8,7 +8,6 @@ import bcrypt from 'bcrypt';
 // -------------------------------------------------------------------
 
 // Create a connection pool using environment variables
-// This is more efficient than opening a new connection for every query.
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -28,8 +27,7 @@ const pool = mysql.createPool({
 async function executeSql(sql, params = []) {
     try {
         const [rows] = await pool.query(sql, params);
-        // The first element of the result array is the actual rows/result set
-        return rows; 
+        return rows; // Rows is an array of objects
     } catch (error) {
         console.error(`[DB Query Error] SQL: ${sql.substring(0, 100)}...`, error);
         throw new Error("Database query failed.");
@@ -81,28 +79,22 @@ export async function authenticateLogin(email, password, role) {
 
     } catch (error) {
         console.error("Authentication check failed:", error);
-        // Do not expose database errors to the client
         return null;
     }
 }
 
 /**
- * Logs a user out. In a token-based system, this is primarily for server-side cleanup or logging.
- * @param {number} userId - The ID of the user logging out.
- * @param {string} role - The role of the user.
+ * Logs a user out. Renamed to 'logout' to match the import alias in auth.jsx.
+ * @param {number} userId - The ID of the user logging out (optional, for logging).
+ * @param {string} role - The role of the user (optional, for logging).
  * @returns {Promise<boolean>} Always returns true on success.
  */
-export async function logoutUser(userId, role) {
-    // NOTE: In a typical application using JWTs, this function is a server-side NO-OP 
-    // because the token is deleted on the client (in React's useAuth hook)
-    // and the server doesn't maintain session state.
-    
-    // If you were using server-side sessions or refresh tokens, this is where you would:
-    // 1. Invalidate the user's refresh token in a database table.
-    // 2. Log the user's logout time.
+export async function logout(userId, role) { // 💥 FUNCTION NAME IS NOW 'logout'
+    // NOTE: In a token-based system, this is a server-side NO-OP.
+    // The main work (deleting token/state) happens on the client (auth.jsx).
     
     try {
-        // Example: Log the action (no actual database change needed here)
+        // Log the action (no actual database change needed here)
         console.log(`[LOGOUT] User ID: ${userId} (Role: ${role}) successfully logged out.`);
         
         // Simulate a small network delay for consistency
@@ -111,7 +103,7 @@ export async function logoutUser(userId, role) {
         return true;
     } catch (error) {
         console.error("Logout process error:", error);
-        return false; // Return false if a critical server-side cleanup failed
+        return false;
     }
 }
 
@@ -134,12 +126,10 @@ export async function fetchDashboardOverviewData() {
                 (SELECT COUNT(client_id) FROM Client WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)) AS newClientsLast30Days;
         `;
         const keyMetricsResult = await executeSql(keyMetricsQuery);
-        // Use default values (0 or empty object) if no results are returned
         const { totalRevenue, totalBookings, activeGivers, newClientsLast30Days } = keyMetricsResult[0] || {};
 
 
         // 2. Monthly Revenue Trend Query
-        // SQL: Groups revenue by month, ordered by the earliest booked_at date for correct chronological sorting.
         const monthlyRevenueQuery = `
             SELECT DATE_FORMAT(booked_at, '%b') AS month, SUM(total_price_rwf) AS revenue 
             FROM Booking 
@@ -151,7 +141,6 @@ export async function fetchDashboardOverviewData() {
 
 
         // 3. Monthly Bookings Trend Query
-        // SQL: Groups completed bookings count by month.
         const monthlyBookingsQuery = `
             SELECT DATE_FORMAT(booked_at, '%b') AS month, COUNT(booking_id) AS bookings 
             FROM Booking 
@@ -177,7 +166,6 @@ export async function fetchDashboardOverviewData() {
 
 
         // 5. Top Services by Booking Count Query
-        // SQL: Joins Booking (via Giver_Service_Price) to Service_Type to count completed bookings per service name.
         const serviceUsageQuery = `
             SELECT T.service_name as service, COUNT(B.booking_id) as bookings 
             FROM Booking B 
