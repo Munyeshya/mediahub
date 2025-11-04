@@ -203,7 +203,7 @@ export async function fetchDashboardOverviewData() {
 /**
  * Fetches a list of all Service Givers with their basic profile status for the Admin page.
  */
-export async function fetchGiversFromDB() {
+export async function fetchGivers() {
     const sql = `
         SELECT
             sg.giver_id AS id,
