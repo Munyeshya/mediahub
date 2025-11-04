@@ -26,8 +26,9 @@ const pool = mysql.createPool({
  */
 async function executeSql(sql, params = []) {
     try {
-        const [rows] = await pool.query(sql, params);
-        return rows; // Rows is an array of objects
+        // The first element of the result array is the actual rows/result set
+        const [rows] = await pool.query(sql, params); 
+        return rows; 
     } catch (error) {
         console.error(`[DB Query Error] SQL: ${sql.substring(0, 100)}...`, error);
         throw new Error("Database query failed.");
@@ -41,10 +42,6 @@ async function executeSql(sql, params = []) {
 
 /**
  * Authenticates a user (Admin, Client, or Giver) against the database.
- * @param {string} email - The user's email.
- * @param {string} password - The plaintext password.
- * @param {string} role - The selected role ('Admin', 'Client', or 'Giver').
- * @returns {Promise<object|null>} Object {id, role} on successful login, or null on failure.
  */
 export async function authenticateLogin(email, password, role) {
     let tableName = '';
@@ -57,7 +54,6 @@ export async function authenticateLogin(email, password, role) {
         default: return null;
     }
 
-    // SQL: Fetch the ID and stored password hash for the given email
     const sql = `SELECT ${idColumn} AS id, password_hash FROM ${tableName} WHERE email = ?`;
     
     try {
@@ -65,17 +61,16 @@ export async function authenticateLogin(email, password, role) {
         const user = rows[0];
 
         if (!user) {
-            return null; // User not found
+            return null;
         }
         
-        // Use bcrypt to compare the submitted password with the stored hash
         const passwordMatch = await bcrypt.compare(password, user.password_hash);
         
         if (passwordMatch) {
             return { id: user.id, role };
         }
         
-        return null; // Password mismatch
+        return null;
 
     } catch (error) {
         console.error("Authentication check failed:", error);
@@ -84,9 +79,9 @@ export async function authenticateLogin(email, password, role) {
 }
 
 /**
- * Logs a user out. Renamed to 'logout' to match the import alias in auth.jsx.
+ * Logs a user out.
  */
-export async function logout(userId, role) { // 💥 FUNCTION NAME IS NOW 'logout'
+export async function logout(userId, role) {
     try {
         console.log(`[LOGOUT] User ID: ${userId} (Role: ${role}) successfully logged out.`);
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -107,7 +102,9 @@ export async function logout(userId, role) { // 💥 FUNCTION NAME IS NOW 'logou
  */
 export async function fetchDashboardOverviewData() {
     try {
-        // Key Metrics Query (Uses subqueries for efficient fetching)
+        // ... (Dashboard logic remains unchanged)
+        
+        // 1. Key Metrics Query (Uses subqueries for efficient fetching)
         const keyMetricsQuery = `
             SELECT 
                 (SELECT SUM(total_price_rwf) FROM Booking WHERE status = 'Completed') AS totalRevenue,
@@ -119,7 +116,7 @@ export async function fetchDashboardOverviewData() {
         const { totalRevenue, totalBookings, activeGivers, newClientsLast30Days } = keyMetricsResult[0] || {};
 
 
-        // Monthly Revenue Trend Query
+        // 2. Monthly Revenue Trend Query
         const monthlyRevenueQuery = `
             SELECT DATE_FORMAT(booked_at, '%b') AS month, SUM(total_price_rwf) AS revenue 
             FROM Booking 
@@ -130,7 +127,7 @@ export async function fetchDashboardOverviewData() {
         const monthlyRevenueData = await executeSql(monthlyRevenueQuery);
 
 
-        // Giver Status Distribution Query
+        // 3. Giver Status Distribution Query
         const giverStatusQuery = `
             SELECT status, COUNT(giver_id) as count 
             FROM Service_Giver 
@@ -143,7 +140,7 @@ export async function fetchDashboardOverviewData() {
         }));
 
 
-        // Top Services by Booking Count Query
+        // 4. Top Services by Booking Count Query
         const serviceUsageQuery = `
             SELECT T.service_name as service, COUNT(B.booking_id) as bookings 
             FROM Booking B 
@@ -164,7 +161,7 @@ export async function fetchDashboardOverviewData() {
                 newClientsLast30Days: newClientsLast30Days || 0,
             },
             monthlyRevenueData,
-            monthlyBookingsData: [], // Placeholder for monthly bookings data if not explicitly calculated above
+            monthlyBookingsData: [], 
             giverStatusData,
             serviceUsageData,
         };
@@ -181,9 +178,8 @@ export async function fetchDashboardOverviewData() {
 
 /**
  * Fetches a comprehensive list of all Service Givers for the admin panel.
- * @returns {Promise<Array<object>>} List of giver objects.
  */
-export async function fetchGivers() { // 💥 NEW EXPORT
+export async function fetchGivers() {
     const sql = `
         SELECT 
             SG.giver_id AS id,
@@ -208,7 +204,6 @@ export async function fetchGivers() { // 💥 NEW EXPORT
     `;
     try {
         const givers = await executeSql(sql);
-        // Ensure ratings are formatted to one decimal place for consistency
         return givers.map(giver => ({
             ...giver,
             averageRating: parseFloat(giver.averageRating).toFixed(1)
@@ -216,6 +211,31 @@ export async function fetchGivers() { // 💥 NEW EXPORT
     } catch (error) {
         console.error("Error fetching givers:", error);
         throw new Error("Could not fetch the list of service givers.");
+    }
+}
+
+/**
+ * Updates the status and verification flag for a Service Giver.
+ * @param {number} giverId - The ID of the giver to update.
+ * @param {string} status - The new status ('Active', 'Pending', 'Suspended').
+ * @param {boolean} isVerified - The new verification status.
+ * @returns {Promise<boolean>} True if the update was successful.
+ */
+export async function updateGiverStatus(giverId, status, isVerified) { // 💥 NEW EXPORT
+    const sql = `
+        UPDATE Service_Giver 
+        SET status = ?, is_verified = ?
+        WHERE giver_id = ?;
+    `;
+    try {
+        const result = await executeSql(sql, [status, isVerified, giverId]);
+        if (result.affectedRows === 0) {
+            console.warn(`[DB WARN] Giver ID ${giverId} not found or no changes made.`);
+        }
+        return true;
+    } catch (error) {
+        console.error("Error updating giver status:", error);
+        throw new Error("Could not update giver status on the database.");
     }
 }
 
