@@ -28,17 +28,17 @@ const pool = mysql.createPool({
 async function executeSql(sql, params = []) {
     try {
         const [rows] = await pool.query(sql, params);
-        return rows; // Rows is an array of objects
+        // The first element of the result array is the actual rows/result set
+        return rows; 
     } catch (error) {
         console.error(`[DB Query Error] SQL: ${sql.substring(0, 100)}...`, error);
-        // In a real application, you might want a more specific error for the front-end
         throw new Error("Database query failed.");
     }
 }
 
 
 // -------------------------------------------------------------------
-// 2. AUTHENTICATION LOGIC
+// 2. AUTHENTICATION LOGIC (Real Queries & bcrypt)
 // -------------------------------------------------------------------
 
 /**
@@ -81,13 +81,43 @@ export async function authenticateLogin(email, password, role) {
 
     } catch (error) {
         console.error("Authentication check failed:", error);
+        // Do not expose database errors to the client
         return null;
+    }
+}
+
+/**
+ * Logs a user out. In a token-based system, this is primarily for server-side cleanup or logging.
+ * @param {number} userId - The ID of the user logging out.
+ * @param {string} role - The role of the user.
+ * @returns {Promise<boolean>} Always returns true on success.
+ */
+export async function logoutUser(userId, role) {
+    // NOTE: In a typical application using JWTs, this function is a server-side NO-OP 
+    // because the token is deleted on the client (in React's useAuth hook)
+    // and the server doesn't maintain session state.
+    
+    // If you were using server-side sessions or refresh tokens, this is where you would:
+    // 1. Invalidate the user's refresh token in a database table.
+    // 2. Log the user's logout time.
+    
+    try {
+        // Example: Log the action (no actual database change needed here)
+        console.log(`[LOGOUT] User ID: ${userId} (Role: ${role}) successfully logged out.`);
+        
+        // Simulate a small network delay for consistency
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        return true;
+    } catch (error) {
+        console.error("Logout process error:", error);
+        return false; // Return false if a critical server-side cleanup failed
     }
 }
 
 
 // -------------------------------------------------------------------
-// 3. ADMIN DASHBOARD DATA LOGIC (Real Queries Implemented)
+// 3. ADMIN DASHBOARD DATA LOGIC
 // -------------------------------------------------------------------
 
 /**
@@ -100,15 +130,16 @@ export async function fetchDashboardOverviewData() {
             SELECT 
                 (SELECT SUM(total_price_rwf) FROM Booking WHERE status = 'Completed') AS totalRevenue,
                 (SELECT COUNT(booking_id) FROM Booking) AS totalBookings,
-                (SELECT COUNT(giver_id) FROM Service_Giver WHERE is_verified = TRUE) AS activeGivers,
+                (SELECT COUNT(giver_id) FROM Service_Giver WHERE is_verified = TRUE AND status = 'Active') AS activeGivers,
                 (SELECT COUNT(client_id) FROM Client WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)) AS newClientsLast30Days;
         `;
         const keyMetricsResult = await executeSql(keyMetricsQuery);
+        // Use default values (0 or empty object) if no results are returned
         const { totalRevenue, totalBookings, activeGivers, newClientsLast30Days } = keyMetricsResult[0] || {};
 
 
         // 2. Monthly Revenue Trend Query
-        // SQL: Groups revenue by month, ordered by the first booked_at date in that month for correct chronological sorting.
+        // SQL: Groups revenue by month, ordered by the earliest booked_at date for correct chronological sorting.
         const monthlyRevenueQuery = `
             SELECT DATE_FORMAT(booked_at, '%b') AS month, SUM(total_price_rwf) AS revenue 
             FROM Booking 
@@ -146,7 +177,7 @@ export async function fetchDashboardOverviewData() {
 
 
         // 5. Top Services by Booking Count Query
-        // SQL: Joins Booking to Service_Type to count completed bookings per service name.
+        // SQL: Joins Booking (via Giver_Service_Price) to Service_Type to count completed bookings per service name.
         const serviceUsageQuery = `
             SELECT T.service_name as service, COUNT(B.booking_id) as bookings 
             FROM Booking B 
@@ -193,7 +224,8 @@ export async function fetchServices() {
             ST.service_id AS id, 
             ST.service_name AS name, 
             ST.base_unit AS baseUnit,
-            SC.category_name AS categoryName
+            SC.category_name AS categoryName,
+            ST.category_id AS categoryId
         FROM Service_Type ST
         JOIN Service_Category SC ON ST.category_id = SC.category_id
         ORDER BY SC.category_name, ST.service_name;
@@ -208,7 +240,6 @@ export async function fetchServices() {
 
 /**
  * Adds a new service to the Service_Type table.
- * Assumes the client passes a category_id along with the new service details.
  */
 export async function addService(newService) {
     const { name, categoryId, baseUnit } = newService;
@@ -218,7 +249,6 @@ export async function addService(newService) {
         VALUES (?, ?, ?);
     `;
     try {
-        // The executeSql function from mysql2/promise returns an object with insertId
         const result = await executeSql(sql, [categoryId, name, baseUnit]);
         // Return the full new service object with the newly created ID
         return { id: result.insertId, ...newService };
@@ -229,7 +259,7 @@ export async function addService(newService) {
 }
 
 /**
- * Updates an existing service's name and base unit.
+ * Updates an existing service's name, category ID, and base unit.
  */
 export async function updateService(updatedService) {
     const { id, name, categoryId, baseUnit } = updatedService;
@@ -266,6 +296,6 @@ export async function deleteService(id) {
         return true;
     } catch (error) {
         console.error("Error deleting service:", error);
-        throw new Error("Could not delete service from the database. It may be linked to existing bookings or prices.");
+        throw new Error("Could not delete service from the database. It may be linked to existing records.");
     }
 }
