@@ -1,7 +1,44 @@
-// src/logic/db.js (Unified Database Logic)
+// src/logic/db.js (Unified Database Logic - Real MySQL2 and bcrypt Implementation)
+import mysql from 'mysql2/promise'; // Use the promise version for async/await
+import bcrypt from 'bcrypt';
+// NOTE: Environment variables (DB_HOST, DB_USER, etc.) must be set for this to work.
 
 // -------------------------------------------------------------------
-// 1. AUTHENTICATION LOGIC
+// 1. DATABASE CONNECTION SETUP
+// -------------------------------------------------------------------
+
+// Create a connection pool using environment variables
+// This is more efficient than opening a new connection for every query.
+const pool = mysql.createPool({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    waitForConnections: true,
+    connectionLimit: 10, // Adjust as needed
+    queueLimit: 0,
+});
+
+/**
+ * Executes an SQL query against the database pool.
+ * @param {string} sql - The SQL query string.
+ * @param {Array<any>} params - Parameters for the query (prevents SQL injection).
+ * @returns {Promise<Array<object>>} The rows returned by the query.
+ */
+async function executeSql(sql, params = []) {
+    try {
+        const [rows] = await pool.query(sql, params);
+        return rows; // Rows is an array of objects
+    } catch (error) {
+        console.error(`[DB Query Error] SQL: ${sql.substring(0, 100)}...`, error);
+        // In a real application, you might want a more specific error for the front-end
+        throw new Error("Database query failed.");
+    }
+}
+
+
+// -------------------------------------------------------------------
+// 2. AUTHENTICATION LOGIC
 // -------------------------------------------------------------------
 
 /**
@@ -16,282 +53,219 @@ export async function authenticateLogin(email, password, role) {
     let idColumn = '';
     
     switch (role) {
-        case 'Admin':
-            tableName = 'Admin';
-            idColumn = 'admin_id';
-            break;
-        case 'Client':
-            tableName = 'Client';
-            idColumn = 'client_id';
-            break;
-        case 'Giver':
-            tableName = 'Service_Giver';
-            idColumn = 'giver_id';
-            break;
-        default:
-            return null;
+        case 'Admin': tableName = 'Admin'; idColumn = 'admin_id'; break;
+        case 'Client': tableName = 'Client'; idColumn = 'client_id'; break;
+        case 'Giver': tableName = 'Service_Giver'; idColumn = 'giver_id'; break;
+        default: return null;
     }
 
-    // SQL placeholder: SELECT id_column AS id, password_hash FROM table_name WHERE email = ?;
+    // SQL: Fetch the ID and stored password hash for the given email
+    const sql = `SELECT ${idColumn} AS id, password_hash FROM ${tableName} WHERE email = ?`;
     
     try {
-        // --- START OF DATABASE CHECK SIMULATION (Admin: admin@hub.com/adminpass) ---
-        let rows = [];
-        if (email === `admin@hub.com` && role === 'Admin' && password === 'adminpass') rows.push({ id: 1, password_hash: 'adminpass' });
-        if (email === `client@hub.com` && role === 'Client' && password === 'clientpass') rows.push({ id: 101, password_hash: 'clientpass' });
-        if (email === `giver@hub.com` && role === 'Giver' && password === 'giverpass') rows.push({ id: 201, password_hash: 'giverpass' });
-
-        if (rows.length === 0) {
-            return null; 
-        }
-
+        const rows = await executeSql(sql, [email]);
         const user = rows[0];
-        const isMatch = (password === user.password_hash); // Simulation
 
-        if (isMatch) {
-            console.log(`${role} login successful: ID ${user.id}`);
-            return { id: user.id, role: role };
-        } else {
-            return null;
+        if (!user) {
+            return null; // User not found
         }
+        
+        // Use bcrypt to compare the submitted password with the stored hash
+        const passwordMatch = await bcrypt.compare(password, user.password_hash);
+        
+        if (passwordMatch) {
+            return { id: user.id, role };
+        }
+        
+        return null; // Password mismatch
 
     } catch (error) {
-        console.error(`Error during ${role} authentication:`, error.message);
-        throw new Error("Authentication service error."); 
-    }
-}
-
-export const logout = () => {
-    localStorage.removeItem('userAuthToken'); 
-    localStorage.removeItem('userRole'); 
-    console.log("User logged out. Auth state cleared.");
-    return true; 
-};
-
-
-// -------------------------------------------------------------------
-// 2. GIVERS MANAGEMENT FUNCTIONS
-// -------------------------------------------------------------------
-
-/**
- * Simulates fetching the list of Givers from the backend API.
- */
-export async function fetchGivers() {
-    // 💥 NOTE: Replace this mock implementation with your actual API call.
-    const mockGiversData = [
-        { id: 101, name: "Alice Murenzi", email: "alice@creative.com", service: "Videographer", status: "Pending", joined: "2024-09-15" },
-        { id: 102, name: "Bob Rwanda Beats", email: "bob@beats.com", service: "Music Producer", status: "Active", joined: "2023-11-01" },
-        { id: 103, name: "Clara Photos", email: "clara@photos.com", service: "Photographer", status: "Suspended", joined: "2024-01-20" },
-        { id: 104, name: "David Designer", email: "david@design.com", service: "Graphic Designer", status: "Pending", joined: "2024-10-25" },
-        { id: 105, name: "Emma Architect", email: "emma@archi.com", service: "3D Modeler", status: "Active", joined: "2024-05-10" },
-        { id: 106, name: "Fiona Film", email: "fiona@film.com", service: "Videographer", status: "Pending", joined: "2024-10-01" },
-        { id: 107, name: "George Geo", email: "george@geo.com", service: "Photographer", status: "Active", joined: "2023-08-15" },
-        { id: 108, name: "Hana Hues", email: "hana@hues.com", service: "Graphic Designer", status: "Active", joined: "2024-03-22" },
-    ];
-    
-    try {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        return mockGiversData;
-    } catch (error) {
-        console.error("Error fetching givers:", error);
-        throw new Error("Could not connect to the backend server.");
-    }
-}
-
-/**
- * Simulates updating a Giver's status.
- */
-export async function updateGiverStatus(id, status) {
-    // 💥 NOTE: Replace this mock implementation with your actual API call: PUT /api/admin/givers/:id/status
-    try {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        console.log(`[DB SUCCESS] Updated Giver ID ${id} to Status: ${status}`);
-        return true; 
-    } catch (error) {
-        console.error("Error updating giver status:", error);
-        throw new Error("Could not update status on the server.");
+        console.error("Authentication check failed:", error);
+        return null;
     }
 }
 
 
 // -------------------------------------------------------------------
-// 3. SERVICE MANAGEMENT FUNCTIONS
+// 3. ADMIN DASHBOARD DATA LOGIC (Real Queries Implemented)
 // -------------------------------------------------------------------
 
 /**
- * Simulates fetching the list of Services from the backend API.
- */
-export async function fetchServices() {
-    // 💥 NOTE: Replace this mock implementation with your actual API call: GET /api/admin/services
-    const mockServicesData = [
-        { id: 1, name: "Videographer", description: "All forms of video production, editing, and cinematography.", active: true },
-        { id: 2, name: "Photographer", description: "Studio and event photography, retouching, and drone stills.", active: true },
-        { id: 3, name: "Music Producer", description: "Beat making, mixing, and mastering for all genres.", active: true },
-        { id: 4, name: "Graphic Designer", description: "Logo design, branding, and digital asset creation.", active: false },
-    ];
-    
-    try {
-        await new Promise(resolve => setTimeout(resolve, 1500)); 
-        return mockServicesData;
-    } catch (error) {
-        console.error("Error fetching services:", error);
-        throw new Error("Could not connect to the backend server to fetch services.");
-    }
-}
-
-/**
- * Simulates adding a new service.
- */
-export async function addService(newService) {
-    // 💥 NOTE: Replace this mock implementation with your actual API call: POST /api/admin/services
-    try {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const addedService = { ...newService, id: Math.floor(Math.random() * 1000) + 100 };
-        console.log(`[DB SUCCESS] Added Service: ${addedService.name}`);
-        return addedService;
-    } catch (error) {
-        console.error("Error adding service:", error);
-        throw new Error("Could not add service to the server.");
-    }
-}
-
-/**
- * Simulates updating an existing service.
- */
-export async function updateService(updatedService) {
-    // 💥 NOTE: Replace this mock implementation with your actual API call: PUT /api/admin/services/:id
-    try {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        console.log(`[DB SUCCESS] Updated Service ID ${updatedService.id} to Name: ${updatedService.name}`);
-        return updatedService;
-    } catch (error) {
-        console.error("Error updating service:", error);
-        throw new Error("Could not update service on the server.");
-    }
-}
-
-/**
- * Simulates deleting a service.
- */
-export async function deleteService(id) {
-    // 💥 NOTE: Replace this mock implementation with your actual API call: DELETE /api/admin/services/:id
-    try {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        console.log(`[DB SUCCESS] Deleted Service ID ${id}`);
-        return true;
-    } catch (error) {
-        console.error("Error deleting service:", error);
-        throw new Error("Could not delete service from the server.");
-    }
-}
-
-// --- 5. SYSTEM SETTINGS LOGIC ---
-// NOTE: In a real app, these would call endpoints like GET/PUT /api/admin/settings
-
-// Mock storage for settings
-let mockSystemSettings = {
-    commissionRate: 0.15, // 15%
-    minPayoutRWF: 50000,
-    emailVerificationRequired: true,
-    platformStatus: 'Operational',
-};
-
-/**
- * Simulates fetching global system settings from the database.
- */
-export async function getSystemSettings() {
-    try {
-        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network delay
-        console.log("[DB SUCCESS] Fetched system settings.");
-        return { ...mockSystemSettings }; // Return a copy
-    } catch (error) {
-        console.error("Error fetching system settings:", error);
-        throw new Error("Could not retrieve system configuration.");
-    }
-}
-
-/**
- * Simulates updating global system settings in the database.
- * @param {object} newSettings - The new settings object to save.
- */
-export async function updateSystemSettings(newSettings) {
-    try {
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-        mockSystemSettings = { ...newSettings }; // Update mock state
-        console.log("[DB SUCCESS] Updated system settings:", mockSystemSettings);
-        return { success: true };
-    } catch (error) {
-        console.error("Error updating system settings:", error);
-        throw new Error("Could not save system configuration.");
-    }
-}
-
-// -------------------------------------------------------------------
-// 4. DASHBOARD OVERVIEW FUNCTIONS (DATA LOGIC)
-// -------------------------------------------------------------------
-
-/**
- * Simulates complex SQL queries to fetch aggregated data for the Admin Dashboard.
- * * NOTE: This is where you would execute multiple real DB queries
- * (e.g., aggregating bookings, counting statuses, calculating revenue).
- * The returned structure is ready for immediate chart consumption.
+ * Fetches all core dashboard overview data using real SQL queries.
  */
 export async function fetchDashboardOverviewData() {
-    console.log("[DB FETCH] Fetching comprehensive dashboard overview data...");
-    
-    // 🔑 MOCK DATA BASED ON REAL QUERIES:
-    // 1. Total Revenue: SELECT SUM(total_price_RWF) FROM Booking WHERE status = 'Completed';
-    const totalRevenue = 12540000;
-    // 2. Total Bookings: SELECT COUNT(booking_id) FROM Booking;
-    const totalBookings = 78;
-    // 3. Active Givers: SELECT COUNT(giver_id) FROM Service_Giver WHERE is_verified = TRUE;
-    const activeGivers = 45;
-    // 4. New Clients: SELECT COUNT(client_id) FROM Client WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY);
-    const newClientsLast30Days = 12;
-
-    // 5. Monthly Revenue (Chart Data): Aggregation of total_price_RWF by month.
-    const monthlyRevenueData = [
-        { month: 'Jan', revenue: 1200000 },
-        { month: 'Feb', revenue: 1500000 },
-        { month: 'Mar', revenue: 1800000 },
-        { month: 'Apr', revenue: 2100000 },
-        { month: 'May', revenue: 1950000 },
-        { month: 'Jun', revenue: 2500000 },
-    ];
-
-    // 6. Giver Status Distribution: SELECT status, COUNT(giver_id) FROM Service_Giver GROUP BY status;
-    const giverStatusData = [
-        { status: 'Active', count: 45, fill: '#34D399' }, 
-        { status: 'Pending', count: 18, fill: '#FBBF24' }, 
-        { status: 'Suspended', count: 5, fill: '#EF4444' }, 
-    ];
-
-    // 7. Top Services by Booking Count: SELECT T.service_name, COUNT(B.booking_id) FROM Booking B JOIN Service_Type T ... GROUP BY T.service_name ORDER BY count DESC LIMIT 5;
-    const serviceUsageData = [
-        { service: 'Wedding Photo', bookings: 25 },
-        { service: 'Event Video', bookings: 18 },
-        { service: 'Brand Identity', bookings: 12 },
-        { service: 'Portrait Photo', bookings: 10 },
-        { service: 'Music Mixing', bookings: 8 },
-    ];
-
     try {
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network and processing delay
-        
+        // 1. Key Metrics Query (Uses subqueries for efficient fetching in one call)
+        const keyMetricsQuery = `
+            SELECT 
+                (SELECT SUM(total_price_rwf) FROM Booking WHERE status = 'Completed') AS totalRevenue,
+                (SELECT COUNT(booking_id) FROM Booking) AS totalBookings,
+                (SELECT COUNT(giver_id) FROM Service_Giver WHERE is_verified = TRUE) AS activeGivers,
+                (SELECT COUNT(client_id) FROM Client WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)) AS newClientsLast30Days;
+        `;
+        const keyMetricsResult = await executeSql(keyMetricsQuery);
+        const { totalRevenue, totalBookings, activeGivers, newClientsLast30Days } = keyMetricsResult[0] || {};
+
+
+        // 2. Monthly Revenue Trend Query
+        // SQL: Groups revenue by month, ordered by the first booked_at date in that month for correct chronological sorting.
+        const monthlyRevenueQuery = `
+            SELECT DATE_FORMAT(booked_at, '%b') AS month, SUM(total_price_rwf) AS revenue 
+            FROM Booking 
+            WHERE status = 'Completed'
+            GROUP BY month 
+            ORDER BY MIN(booked_at) ASC;
+        `;
+        const monthlyRevenueData = await executeSql(monthlyRevenueQuery);
+
+
+        // 3. Monthly Bookings Trend Query
+        // SQL: Groups completed bookings count by month.
+        const monthlyBookingsQuery = `
+            SELECT DATE_FORMAT(booked_at, '%b') AS month, COUNT(booking_id) AS bookings 
+            FROM Booking 
+            WHERE status = 'Completed'
+            GROUP BY month 
+            ORDER BY MIN(booked_at) ASC;
+        `;
+        const monthlyBookingsData = await executeSql(monthlyBookingsQuery);
+
+
+        // 4. Giver Status Distribution Query
+        const giverStatusQuery = `
+            SELECT status, COUNT(giver_id) as count 
+            FROM Service_Giver 
+            GROUP BY status;
+        `;
+        // Map the results to include client-side colors
+        const rawGiverStatusData = await executeSql(giverStatusQuery);
+        const giverStatusData = rawGiverStatusData.map(row => ({
+            ...row,
+            fill: row.status === 'Active' ? '#34D399' : (row.status === 'Pending' ? '#FBBF24' : '#EF4444')
+        }));
+
+
+        // 5. Top Services by Booking Count Query
+        // SQL: Joins Booking to Service_Type to count completed bookings per service name.
+        const serviceUsageQuery = `
+            SELECT T.service_name as service, COUNT(B.booking_id) as bookings 
+            FROM Booking B 
+            JOIN Giver_Service_Price GSP ON B.gs_price_id = GSP.gs_price_id
+            JOIN Service_Type T ON GSP.service_id = T.service_id
+            WHERE B.status = 'Completed'
+            GROUP BY T.service_name 
+            ORDER BY bookings DESC 
+            LIMIT 5;
+        `;
+        const serviceUsageData = await executeSql(serviceUsageQuery);
+
+        // All results are combined and returned
         return {
             keyMetrics: {
-                totalRevenue,
-                totalBookings,
-                activeGivers,
-                newClientsLast30Days,
+                totalRevenue: totalRevenue || 0,
+                totalBookings: totalBookings || 0,
+                activeGivers: activeGivers || 0,
+                newClientsLast30Days: newClientsLast30Days || 0,
             },
             monthlyRevenueData,
+            monthlyBookingsData,
             giverStatusData,
             serviceUsageData,
         };
     } catch (error) {
         console.error("Error fetching dashboard overview data:", error);
-        throw new Error("Failed to load aggregated dashboard data.");
+        throw new Error("Could not retrieve dashboard data from the database.");
     }
 }
 
+
+// -------------------------------------------------------------------
+// 4. ADMIN SERVICE MANAGEMENT LOGIC
+// -------------------------------------------------------------------
+
+/**
+ * Fetches all services with their category names for the admin panel.
+ */
+export async function fetchServices() {
+    // SQL: Joins Service_Type with Service_Category
+    const sql = `
+        SELECT 
+            ST.service_id AS id, 
+            ST.service_name AS name, 
+            ST.base_unit AS baseUnit,
+            SC.category_name AS categoryName
+        FROM Service_Type ST
+        JOIN Service_Category SC ON ST.category_id = SC.category_id
+        ORDER BY SC.category_name, ST.service_name;
+    `;
+    try {
+        return await executeSql(sql);
+    } catch (error) {
+        console.error("Error fetching services:", error);
+        throw new Error("Could not fetch service list.");
+    }
+}
+
+/**
+ * Adds a new service to the Service_Type table.
+ * Assumes the client passes a category_id along with the new service details.
+ */
+export async function addService(newService) {
+    const { name, categoryId, baseUnit } = newService;
+    // SQL: INSERT INTO Service_Type
+    const sql = `
+        INSERT INTO Service_Type (category_id, service_name, base_unit) 
+        VALUES (?, ?, ?);
+    `;
+    try {
+        // The executeSql function from mysql2/promise returns an object with insertId
+        const result = await executeSql(sql, [categoryId, name, baseUnit]);
+        // Return the full new service object with the newly created ID
+        return { id: result.insertId, ...newService };
+    } catch (error) {
+        console.error("Error adding service:", error);
+        throw new Error("Could not add service to the database. It might already exist.");
+    }
+}
+
+/**
+ * Updates an existing service's name and base unit.
+ */
+export async function updateService(updatedService) {
+    const { id, name, categoryId, baseUnit } = updatedService;
+    // SQL: UPDATE Service_Type
+    const sql = `
+        UPDATE Service_Type 
+        SET service_name = ?, category_id = ?, base_unit = ?
+        WHERE service_id = ?;
+    `;
+    try {
+        await executeSql(sql, [name, categoryId, baseUnit, id]);
+        return updatedService;
+    } catch (error) {
+        console.error("Error updating service:", error);
+        throw new Error("Could not update service on the database.");
+    }
+}
+
+/**
+ * Deletes a service by its ID.
+ */
+export async function deleteService(id) {
+    // SQL: DELETE FROM Service_Type
+    const sql = `
+        DELETE FROM Service_Type 
+        WHERE service_id = ?;
+    `;
+    try {
+        const result = await executeSql(sql, [id]);
+        // Check if a row was actually deleted
+        if (result.affectedRows === 0) {
+            throw new Error(`Service ID ${id} not found.`);
+        }
+        return true;
+    } catch (error) {
+        console.error("Error deleting service:", error);
+        throw new Error("Could not delete service from the database. It may be linked to existing bookings or prices.");
+    }
+}
