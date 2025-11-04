@@ -1,11 +1,12 @@
-// /mediahub/src/logic/db.js (API Client - Uses fetch to talk to the Node.js server)
+// /src/logic/db.js (Unified Frontend API Client)
 import { toast } from 'react-toastify'; 
 
-// The URL where your new Node.js Express server is running
+// --- API URL CONFIGURATION ---
 const API_BASE_URL = 'http://localhost:3001/api'; 
 const AUTH_URL = `${API_BASE_URL}/login`;
 const DASHBOARD_URL = `${API_BASE_URL}/admin/dashboard`;
 const SETTINGS_URL = `${API_BASE_URL}/admin/settings`;
+const GIVERS_URL = `${API_BASE_URL}/admin/givers`; // URL for Admin: Manage Givers
 
 // -------------------------------------------------------------------
 // 1. AUTHENTICATION LOGIC
@@ -13,6 +14,9 @@ const SETTINGS_URL = `${API_BASE_URL}/admin/settings`;
 
 /**
  * Communicates with the new backend server for authentication.
+ * @param {string} email - The user's email.
+ * @param {string} password - The plaintext password.
+ * @param {string} role - The selected role ('Admin', 'Client', or 'Giver').
  * @returns {Promise<object|null>} Object {id, role} on successful login, or null on failure.
  */
 export async function authenticateLogin(email, password, role) {
@@ -25,40 +29,42 @@ export async function authenticateLogin(email, password, role) {
 
         if (response.ok) {
             // Success: Server responds with {id, role} (status 200)
-            return response.json(); 
+            const userData = await response.json(); 
+            toast.success(`Welcome, ${role} user!`);
+            return userData; 
         } else if (response.status === 401) {
             // Invalid credentials
             const errorData = await response.json();
-            toast.error(errorData.message || "Invalid credentials or role. Please try again.");
+            toast.error(errorData.message || "Invalid credentials or role.");
             return null;
         } else {
-            // Other server errors (e.g., 500)
-            const errorData = await response.json();
-            toast.error(errorData.message || "A server error occurred during login.");
-            return null;
+            // Other server error (e.g., 500)
+            throw new Error(`Authentication failed with status: ${response.status}`);
         }
     } catch (error) {
-        // Network or Connection error (Server is not running)
-        console.error("Network or Fetch Error:", error);
-        toast.error("Could not connect to the server. Please ensure the backend is running on http://localhost:3001.");
-        return null;
+        console.error("Error in authenticateLogin:", error);
+        toast.error("Network or Server error. Could not connect to the API.");
+        // Re-throw for caller to handle
+        throw error;
     }
 }
 
 /**
- * Clears client-side authentication data (called by auth.jsx).
+ * Clears authentication data from local storage on logout.
  */
 export function logout() {
-    localStorage.removeItem('userRole'); 
-    console.log('User role removed from localStorage. Logout successful.');
+    // Clear user-specific data from storage
+    localStorage.removeItem('userId'); 
+    localStorage.removeItem('userRole');
+    console.log("Client-side logout complete.");
 }
 
 // -------------------------------------------------------------------
-// 2. DASHBOARD DATA & SETTINGS
+// 2. ADMIN: DASHBOARD DATA
 // -------------------------------------------------------------------
 
 /**
- * Fetches all dashboard overview data from the server.
+ * Fetches all key metrics and chart data for the Admin Dashboard.
  */
 export async function fetchDashboardOverviewData() {
     try {
@@ -69,38 +75,75 @@ export async function fetchDashboardOverviewData() {
             throw new Error(`Server responded with status: ${response.status}. Body: ${errorText}`);
         }
         
+        // Data structure: { keyMetrics, monthlyRevenueData, giverStatusData, serviceUsageData }
         return response.json(); 
     } catch (error) {
         console.error("Error fetching dashboard data:", error);
-        toast.error("Failed to load dashboard data. Check the server connection and logs.");
+        toast.error("Failed to load dashboard data. Check the server connection.");
         throw error;
     }
 }
 
+// -------------------------------------------------------------------
+// 3. ADMIN: MANAGE GIVERS DATA
+// -------------------------------------------------------------------
+
 /**
- * Retrieves all system settings from the server.
+ * Fetches the list of all Givers for the Admin Management page.
+ */
+export async function fetchGivers() {
+    try {
+        const response = await fetch(GIVERS_URL);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server responded with status: ${response.status}. Body: ${errorText}`);
+        }
+        
+        // Returns an array of giver objects
+        return response.json(); 
+    } catch (error) {
+        console.error("Error fetching givers list:", error);
+        toast.error("Failed to load Giver list. Check the server connection and logs.");
+        throw error;
+    }
+}
+
+// -------------------------------------------------------------------
+// 4. ADMIN: SYSTEM SETTINGS
+// -------------------------------------------------------------------
+
+/**
+ * Retrieves all system settings from the backend.
+ * @returns {Promise<object>} An object of setting_key: setting_value pairs.
  */
 export async function getSystemSettings() {
     try {
         const response = await fetch(SETTINGS_URL);
+
         if (!response.ok) {
-            throw new Error(`Server responded with status: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`Server responded with status: ${response.status}. Body: ${errorText}`);
         }
+
+        // Returns { setting_key: setting_value, ... }
         return response.json();
     } catch (error) {
         console.error("Error fetching system settings:", error);
-        toast.error("Failed to load system settings. Check server logs.");
+        toast.error("Failed to load system settings. Check the server connection.");
         throw error;
     }
 }
 
 /**
- * Updates a batch of system settings on the server.
+ * Updates a batch of system settings on the backend.
+ * @param {object} settings - An object of setting_key: setting_value pairs to update.
+ * @returns {Promise<boolean>} True on success.
  */
 export async function updateSystemSettings(settings) {
     try {
         const response = await fetch(SETTINGS_URL, {
-            method: 'POST',
+            method: 'POST', // We use POST for batch updates/UPSERT
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(settings),
         });
@@ -115,8 +158,9 @@ export async function updateSystemSettings(settings) {
         return true;
     } catch (error) {
         console.error("Error updating system settings:", error);
+        // Note: The toast is thrown inside the error block here as well, 
+        // to catch network errors not just server error messages.
         toast.error("Failed to save system settings. Check server logs.");
         throw error;
     }
 }
-

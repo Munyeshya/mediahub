@@ -1,20 +1,21 @@
-// /server/db.js (The REAL database module - MySQL2 and bcryptjs are safe here)
+// /server/db.js (The REAL database module - MySQL2 and bcryptjs)
 import mysql from 'mysql2/promise'; 
 import bcrypt from 'bcryptjs'; 
 import dotenv from 'dotenv';
 
-dotenv.config(); 
+dotenv.config(); // Load environment variables from .env file
 
 // -------------------------------------------------------------------
 // 1. DATABASE CONNECTION SETUP
 // -------------------------------------------------------------------
 
+// Create a connection pool using environment variables
 const pool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT, // Use the configured port 3306
+    port: process.env.DB_PORT, 
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
@@ -22,9 +23,13 @@ const pool = mysql.createPool({
 
 /**
  * Executes an SQL query against the database pool.
+ * @param {string} sql - The SQL query string.
+ * @param {Array<any>} params - Parameters for the query (prevents SQL injection).
+ * @returns {Promise<Array<object>>} The rows returned by the query.
  */
 async function executeSql(sql, params = []) {
     try {
+        // The first element of the result array is the actual rows/result set
         const [rows] = await pool.query(sql, params); 
         return rows; 
     } catch (error) {
@@ -34,11 +39,12 @@ async function executeSql(sql, params = []) {
 }
 
 // -------------------------------------------------------------------
-// 2. AUTHENTICATION LOGIC
+// 2. AUTHENTICATION LOGIC (Backend Handler)
 // -------------------------------------------------------------------
 
 /**
- * Authenticates a user (Admin, Client, or Giver) against the database using real credentials.
+ * Authenticates a user against the database using their role to determine the table.
+ * @returns {Promise<object|null>} Object {id, role} on successful login, or null on failure.
  */
 export async function authenticateLogin(email, password, role) {
     let tableName = '';
@@ -61,137 +67,179 @@ export async function authenticateLogin(email, password, role) {
             return null;
     }
 
-    const sql = `SELECT ${idColumn} AS id, password_hash FROM ${tableName} WHERE email = ?`;
+    // SQL to fetch the user's ID and hashed password
+    const sql = `SELECT ${idColumn} AS id, password_hash FROM ${tableName} WHERE email = ?;`;
     
     try {
-        const rows = await executeSql(sql, [email]); 
+        const rows = await executeSql(sql, [email]);
+        const user = rows[0];
 
-        if (rows.length === 0) {
-            return null; // User not found
+        if (user && user.password_hash) {
+            // Compare the plaintext password with the hashed password from the DB
+            const isMatch = await bcrypt.compare(password, user.password_hash);
+            if (isMatch) {
+                // Successful login
+                console.log(`[DB SUCCESS] User ${email} logged in as ${role}.`);
+                return { id: user.id, role };
+            }
         }
-        
-        const { id, password_hash } = rows[0];
-
-        // Perform the real password comparison using bcrypt
-        const passwordMatch = await bcrypt.compare(password, password_hash);
-
-        if (passwordMatch) {
-            console.log(`[DB SUCCESS] User ${id} logged in as ${role}.`);
-            return { id, role }; 
-        } else {
-            return null; // Password mismatch
-        }
-
+        // Authentication failed (no user found or password mismatch)
+        return null;
     } catch (error) {
-        console.error('Error during authenticateLogin:', error);
-        throw new Error("Authentication failed due to a server error.");
+        console.error("Error during authentication query:", error);
+        throw new Error("A database error occurred during login.");
+    }
+}
+
+
+// -------------------------------------------------------------------
+// 3. ADMIN: DASHBOARD DATA (REAL QUERIES)
+// -------------------------------------------------------------------
+
+/**
+ * Fetches all necessary metrics and chart data for the Admin Dashboard 
+ * using real SQL queries.
+ */
+export async function fetchDashboardOverviewData() {
+    try {
+        // --- 3.1. KEY METRICS QUERY (Single, efficient query) ---
+        const metricsSql = `
+            SELECT
+                -- 1. Total Revenue (from Payment table)
+                (SELECT COALESCE(SUM(amount), 0) FROM Payment) AS totalRevenue,
+                -- 2. Total Bookings
+                (SELECT COUNT(booking_id) FROM Booking) AS totalBookings,
+                -- 3. Active Givers (Givers that are verified)
+                (SELECT COUNT(giver_id) FROM Service_Giver WHERE is_verified = TRUE) AS activeGivers,
+                -- 4. New Clients (30 Days)
+                (SELECT COUNT(client_id) FROM Client WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)) AS newClientsLast30Days;
+        `;
+        const metricsResult = await executeSql(metricsSql);
+        const keyMetrics = metricsResult[0];
+
+
+        // --- 3.2. MONTHLY REVENUE TREND (Last 6 Months) ---
+        const monthlyRevenueSql = `
+            SELECT 
+                DATE_FORMAT(P.created_at, '%b') AS month, -- e.g., 'Jan', 'Feb'
+                COALESCE(SUM(P.amount), 0) AS revenue
+            FROM 
+                Payment P
+            WHERE 
+                P.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+            GROUP BY 
+                month
+            ORDER BY 
+                MIN(P.created_at) ASC;
+        `;
+        const monthlyRevenueData = await executeSql(monthlyRevenueSql);
+
+        // --- 3.3. GIVER STATUS DISTRIBUTION (Based on is_verified) ---
+        const giverStatusSql = `
+            SELECT
+                CASE
+                    WHEN is_verified = TRUE THEN 'Active/Verified'
+                    ELSE 'Pending/Unverified'
+                END AS status,
+                COUNT(giver_id) AS count
+            FROM
+                Service_Giver
+            GROUP BY
+                status;
+        `;
+        const rawGiverStatusData = await executeSql(giverStatusSql);
+        
+        // Map data to include the necessary color for the PieChart
+        const giverStatusData = rawGiverStatusData.map(row => {
+            const status = row.status;
+            let fill = '#FBBF24'; // Default to Pending (Yellow)
+            if (status.includes('Active')) {
+                fill = '#34D399'; // Green
+            }
+            return { status: status.split('/')[0], count: row.count, fill };
+        });
+
+        // --- 3.4. TOP SERVICES BY BOOKING COUNT (Top 5) ---
+        const serviceUsageSql = `
+            SELECT 
+                ST.service_name AS service,
+                COUNT(B.booking_id) AS bookings
+            FROM
+                Booking B
+            JOIN 
+                Service_Type ST ON B.service_id = ST.service_id
+            GROUP BY
+                ST.service_name
+            ORDER BY
+                bookings DESC
+            LIMIT 5;
+        `;
+        const serviceUsageData = await executeSql(serviceUsageSql);
+        
+        console.log("[DB SUCCESS] Dashboard data fetched (REAL DATA).");
+        
+        return {
+            keyMetrics,
+            monthlyRevenueData,
+            giverStatusData,
+            serviceUsageData,
+        };
+    } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        throw new Error("Could not fetch dashboard data from the database.");
     }
 }
 
 // -------------------------------------------------------------------
-// 3. ADMIN DASHBOARD DATA
+// 4. ADMIN: MANAGE GIVERS DATA 
 // -------------------------------------------------------------------
 
 /**
- * Fetches all real data required for the Admin Dashboard overview.
+ * Fetches a list of all Service Givers with their basic profile status for the Admin page.
  */
-export async function fetchDashboardOverviewData() {
-    console.log("[DB QUERY] Fetching real dashboard overview data...");
-    
-    // Key Metrics Queries
-    const [
-        totalRevenueResult, 
-        totalBookingsResult, 
-        activeGiversResult, 
-        newClientsResult
-    ] = await Promise.all([
-        // Total Revenue (From Bookings marked as paid)
-        executeSql(`SELECT COALESCE(SUM(price), 0) AS total FROM Booking WHERE is_paid = TRUE`),
-        // Total Bookings (All time)
-        executeSql(`SELECT COUNT(booking_id) AS count FROM Booking`),
-        // Active Givers (Givers who are verified)
-        executeSql(`SELECT COUNT(giver_id) AS count FROM Service_Giver WHERE is_verified = TRUE`),
-        // New Clients (Last 30 days)
-        executeSql(`SELECT COUNT(client_id) AS count FROM Client WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`),
-    ]);
-
-    const keyMetrics = {
-        totalRevenue: totalRevenueResult[0].total,
-        totalBookings: totalBookingsResult[0].count,
-        activeGivers: activeGiversResult[0].count,
-        newClientsLast30Days: newClientsResult[0].count,
-    };
-    
-    // Monthly Revenue Data (Last 6 months)
-    const monthlyRevenueRaw = await executeSql(`
-        SELECT 
-            DATE_FORMAT(created_at, '%Y-%m') AS month, 
-            COALESCE(SUM(price), 0) AS revenue
-        FROM Booking
-        WHERE is_paid = TRUE AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-        GROUP BY month
-        ORDER BY month;
-    `);
-    
-    // Convert to expected format for the chart (e.g., '2024-10' to 'Oct')
-    const monthlyRevenueData = monthlyRevenueRaw.map(row => ({
-        month: new Date(row.month).toLocaleDateString('en-US', { month: 'short' }),
-        revenue: parseInt(row.revenue),
-    }));
-
-    // Giver Status Distribution (Verified vs. Unverified/Pending)
-    const giverStatusRaw = await executeSql(`
-        SELECT 
-            CASE 
-                WHEN is_verified = TRUE THEN 'Active'
-                ELSE 'Pending'
-            END AS status,
-            COUNT(giver_id) AS count
-        FROM Service_Giver
-        GROUP BY status;
-    `);
-
-    // Map status strings to a consistent color code for the chart
-    const giverStatusData = giverStatusRaw.map(row => ({
-        status: row.status,
-        count: row.count,
-        fill: row.status === 'Active' ? '#34D399' : '#FBBF24',
-    }));
-
-
-    // Top 5 Services by Booking Count
-    const serviceUsageData = await executeSql(`
-        SELECT 
-            T.service_name AS service, 
-            COUNT(B.booking_id) AS bookings
-        FROM Booking B
-        JOIN Service_Type T ON B.service_id = T.service_id
-        GROUP BY T.service_name
-        ORDER BY bookings DESC
-        LIMIT 5;
-    `);
-
-    return {
-        keyMetrics,
-        monthlyRevenueData,
-        giverStatusData,
-        serviceUsageData,
-    };
+export async function fetchGiversFromDB() {
+    const sql = `
+        SELECT
+            sg.giver_id AS id,
+            sg.email,
+            sg.is_verified,
+            sg.created_at,
+            p.full_name,
+            p.city
+        FROM
+            Service_Giver sg
+        LEFT JOIN
+            Profile p ON sg.giver_id = p.giver_id
+        ORDER BY
+            sg.created_at DESC;
+    `;
+    try {
+        const givers = await executeSql(sql);
+        console.log(`[DB SUCCESS] Fetched ${givers.length} service givers.`);
+        // Note: is_verified is a number (0/1) from MySQL; convert to boolean for clarity.
+        return givers.map(giver => ({
+            ...giver,
+            is_verified: !!giver.is_verified 
+        }));
+    } catch (error) {
+        console.error("Error fetching givers list:", error);
+        throw new Error("Could not fetch service givers from the database.");
+    }
 }
 
-
 // -------------------------------------------------------------------
-// 4. SYSTEM SETTINGS LOGIC
+// 5. ADMIN: SYSTEM SETTINGS
 // -------------------------------------------------------------------
 
 /**
- * Retrieves all key-value pairs from the System_Setting table.
+ * Retrieves all system settings from the System_Setting table.
+ * @returns {Promise<object>} An object of setting_key: setting_value pairs.
  */
 export async function getSystemSettings() {
     try {
-        // NOTE: Assumes System_Setting table exists as per previous plan
         const rows = await executeSql('SELECT setting_key, setting_value FROM System_Setting;');
         
+        // Convert the array of {key, value} objects into a single settings object
         return rows.reduce((acc, row) => {
             acc[row.setting_key] = row.setting_value;
             return acc;
@@ -203,11 +251,14 @@ export async function getSystemSettings() {
 }
 
 /**
- * Updates a batch of system settings using an UPSERT strategy.
+ * Updates a batch of system settings using an UPSERT strategy 
+ * (INSERT...ON DUPLICATE KEY UPDATE) on the System_Setting table.
+ * @param {object} settings - An object of setting_key: setting_value pairs to update.
+ * @returns {Promise<boolean>} True if the update was successful.
  */
 export async function updateSystemSettings(settings) {
     if (Object.keys(settings).length === 0) {
-        return true; 
+        return true; // Nothing to update
     }
 
     const connection = await pool.getConnection();
@@ -220,6 +271,7 @@ export async function updateSystemSettings(settings) {
                 VALUES (?, ?) 
                 ON DUPLICATE KEY UPDATE setting_value = ?;
             `;
+            // Execute the UPSERT statement
             await connection.query(sql, [key, value, value]);
         }
 
@@ -232,6 +284,7 @@ export async function updateSystemSettings(settings) {
         console.error("Error updating system settings (transaction rolled back):", error);
         throw new Error("Could not save system settings to the database.");
     } finally {
+        // Must release the connection back to the pool
         connection.release();
     }
 }
