@@ -227,6 +227,31 @@ export async function fetchGiversFromDB() {
     }
 }
 
+/**
+ * 💥 NEW EXPORT: Updates the is_verified status for a specific Service Giver.
+ * @param {number} giverId - The ID of the Service_Giver to update.
+ * @param {boolean} isVerified - The new status (true for Active, false for Pending).
+ * @returns {Promise<boolean>} True if one row was changed.
+ */
+export async function updateGiverStatus(giverId, isVerified) {
+    const sql = `
+        UPDATE Service_Giver 
+        SET is_verified = ? 
+        WHERE giver_id = ?;
+    `;
+    // MySQL2 results for UPDATE queries have an 'affectedRows' property
+    const result = await executeSql(sql, [isVerified, giverId]);
+    
+    // Check if exactly one row was updated
+    if (result && result.affectedRows === 1) {
+        console.log(`[DB SUCCESS] Updated Service Giver ID ${giverId}. New status: ${isVerified ? 'VERIFIED' : 'PENDING'}.`);
+        return true;
+    } else {
+        console.warn(`[DB WARNING] Service Giver ID ${giverId} not found or status already set.`);
+        return false;
+    }
+}
+
 // -------------------------------------------------------------------
 // 5. ADMIN: SYSTEM SETTINGS
 // -------------------------------------------------------------------
