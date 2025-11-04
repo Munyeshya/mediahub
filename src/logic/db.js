@@ -85,21 +85,11 @@ export async function authenticateLogin(email, password, role) {
 
 /**
  * Logs a user out. Renamed to 'logout' to match the import alias in auth.jsx.
- * @param {number} userId - The ID of the user logging out (optional, for logging).
- * @param {string} role - The role of the user (optional, for logging).
- * @returns {Promise<boolean>} Always returns true on success.
  */
 export async function logout(userId, role) { // 💥 FUNCTION NAME IS NOW 'logout'
-    // NOTE: In a token-based system, this is a server-side NO-OP.
-    // The main work (deleting token/state) happens on the client (auth.jsx).
-    
     try {
-        // Log the action (no actual database change needed here)
         console.log(`[LOGOUT] User ID: ${userId} (Role: ${role}) successfully logged out.`);
-        
-        // Simulate a small network delay for consistency
         await new Promise(resolve => setTimeout(resolve, 100));
-        
         return true;
     } catch (error) {
         console.error("Logout process error:", error);
@@ -117,7 +107,7 @@ export async function logout(userId, role) { // 💥 FUNCTION NAME IS NOW 'logou
  */
 export async function fetchDashboardOverviewData() {
     try {
-        // 1. Key Metrics Query (Uses subqueries for efficient fetching in one call)
+        // Key Metrics Query (Uses subqueries for efficient fetching)
         const keyMetricsQuery = `
             SELECT 
                 (SELECT SUM(total_price_rwf) FROM Booking WHERE status = 'Completed') AS totalRevenue,
@@ -129,7 +119,7 @@ export async function fetchDashboardOverviewData() {
         const { totalRevenue, totalBookings, activeGivers, newClientsLast30Days } = keyMetricsResult[0] || {};
 
 
-        // 2. Monthly Revenue Trend Query
+        // Monthly Revenue Trend Query
         const monthlyRevenueQuery = `
             SELECT DATE_FORMAT(booked_at, '%b') AS month, SUM(total_price_rwf) AS revenue 
             FROM Booking 
@@ -140,24 +130,12 @@ export async function fetchDashboardOverviewData() {
         const monthlyRevenueData = await executeSql(monthlyRevenueQuery);
 
 
-        // 3. Monthly Bookings Trend Query
-        const monthlyBookingsQuery = `
-            SELECT DATE_FORMAT(booked_at, '%b') AS month, COUNT(booking_id) AS bookings 
-            FROM Booking 
-            WHERE status = 'Completed'
-            GROUP BY month 
-            ORDER BY MIN(booked_at) ASC;
-        `;
-        const monthlyBookingsData = await executeSql(monthlyBookingsQuery);
-
-
-        // 4. Giver Status Distribution Query
+        // Giver Status Distribution Query
         const giverStatusQuery = `
             SELECT status, COUNT(giver_id) as count 
             FROM Service_Giver 
             GROUP BY status;
         `;
-        // Map the results to include client-side colors
         const rawGiverStatusData = await executeSql(giverStatusQuery);
         const giverStatusData = rawGiverStatusData.map(row => ({
             ...row,
@@ -165,7 +143,7 @@ export async function fetchDashboardOverviewData() {
         }));
 
 
-        // 5. Top Services by Booking Count Query
+        // Top Services by Booking Count Query
         const serviceUsageQuery = `
             SELECT T.service_name as service, COUNT(B.booking_id) as bookings 
             FROM Booking B 
@@ -178,7 +156,6 @@ export async function fetchDashboardOverviewData() {
         `;
         const serviceUsageData = await executeSql(serviceUsageQuery);
 
-        // All results are combined and returned
         return {
             keyMetrics: {
                 totalRevenue: totalRevenue || 0,
@@ -187,7 +164,7 @@ export async function fetchDashboardOverviewData() {
                 newClientsLast30Days: newClientsLast30Days || 0,
             },
             monthlyRevenueData,
-            monthlyBookingsData,
+            monthlyBookingsData: [], // Placeholder for monthly bookings data if not explicitly calculated above
             giverStatusData,
             serviceUsageData,
         };
@@ -199,14 +176,58 @@ export async function fetchDashboardOverviewData() {
 
 
 // -------------------------------------------------------------------
-// 4. ADMIN SERVICE MANAGEMENT LOGIC
+// 4. ADMIN GIVER MANAGEMENT LOGIC
+// -------------------------------------------------------------------
+
+/**
+ * Fetches a comprehensive list of all Service Givers for the admin panel.
+ * @returns {Promise<Array<object>>} List of giver objects.
+ */
+export async function fetchGivers() { // 💥 NEW EXPORT
+    const sql = `
+        SELECT 
+            SG.giver_id AS id,
+            P.full_name AS fullName,
+            SG.email,
+            P.city,
+            SG.is_verified AS isVerified,
+            SG.status,
+            (
+                SELECT COUNT(booking_id) 
+                FROM Booking 
+                WHERE giver_id = SG.giver_id AND status = 'Completed'
+            ) AS completedBookings,
+            (
+                SELECT COALESCE(AVG(rating), 0) 
+                FROM Review 
+                WHERE giver_id = SG.giver_id
+            ) AS averageRating
+        FROM Service_Giver SG
+        LEFT JOIN Profile P ON SG.giver_id = P.giver_id
+        ORDER BY SG.created_at DESC;
+    `;
+    try {
+        const givers = await executeSql(sql);
+        // Ensure ratings are formatted to one decimal place for consistency
+        return givers.map(giver => ({
+            ...giver,
+            averageRating: parseFloat(giver.averageRating).toFixed(1)
+        }));
+    } catch (error) {
+        console.error("Error fetching givers:", error);
+        throw new Error("Could not fetch the list of service givers.");
+    }
+}
+
+
+// -------------------------------------------------------------------
+// 5. ADMIN SERVICE MANAGEMENT LOGIC
 // -------------------------------------------------------------------
 
 /**
  * Fetches all services with their category names for the admin panel.
  */
 export async function fetchServices() {
-    // SQL: Joins Service_Type with Service_Category
     const sql = `
         SELECT 
             ST.service_id AS id, 
@@ -231,14 +252,12 @@ export async function fetchServices() {
  */
 export async function addService(newService) {
     const { name, categoryId, baseUnit } = newService;
-    // SQL: INSERT INTO Service_Type
     const sql = `
         INSERT INTO Service_Type (category_id, service_name, base_unit) 
         VALUES (?, ?, ?);
     `;
     try {
         const result = await executeSql(sql, [categoryId, name, baseUnit]);
-        // Return the full new service object with the newly created ID
         return { id: result.insertId, ...newService };
     } catch (error) {
         console.error("Error adding service:", error);
@@ -251,7 +270,6 @@ export async function addService(newService) {
  */
 export async function updateService(updatedService) {
     const { id, name, categoryId, baseUnit } = updatedService;
-    // SQL: UPDATE Service_Type
     const sql = `
         UPDATE Service_Type 
         SET service_name = ?, category_id = ?, base_unit = ?
@@ -270,14 +288,12 @@ export async function updateService(updatedService) {
  * Deletes a service by its ID.
  */
 export async function deleteService(id) {
-    // SQL: DELETE FROM Service_Type
     const sql = `
         DELETE FROM Service_Type 
         WHERE service_id = ?;
     `;
     try {
         const result = await executeSql(sql, [id]);
-        // Check if a row was actually deleted
         if (result.affectedRows === 0) {
             throw new Error(`Service ID ${id} not found.`);
         }
