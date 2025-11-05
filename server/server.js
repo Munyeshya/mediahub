@@ -4,20 +4,24 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import * as db from './db.js'; // Imports all real database functions
+import * as db from './db.js'; // Import your DB functions
 
-// Ensure we load the .env located in the server directory (robust even when starting from project root)
+// --- FIX: create the Express app before using app.use(...) ---
+const app = express();
+
+// Load .env from the same folder as this file
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Middleware
 app.use(cors({
-    origin: 'http://localhost:5173', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type'], 
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type'],
 }));
-app.use(express.json()); 
+app.use(express.json());
+
 
 // --- 1. AUTHENTICATION ROUTE ---
 app.post('/api/login', async (req, res) => {
