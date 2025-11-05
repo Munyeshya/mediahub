@@ -1,8 +1,8 @@
 // /src/logic/db.js (Unified Frontend API Client)
-import { toast } from 'react-toastify'; 
+import { toast } from 'react-toastify';
 
 // --- API URL CONFIGURATION ---
-const API_BASE_URL = 'http://localhost:3001/api'; 
+const API_BASE_URL = 'http://localhost:3001/api';
 const AUTH_URL = `${API_BASE_URL}/login`;
 const DASHBOARD_URL = `${API_BASE_URL}/admin/dashboard`;
 const SETTINGS_URL = `${API_BASE_URL}/admin/settings`;
@@ -28,18 +28,25 @@ export async function authenticateLogin(email, password, role) {
         });
 
         if (response.ok) {
-            // Success: Server responds with {id, role} (status 200)
-            const userData = await response.json(); 
+            const userData = await response.json();
             toast.success(`Welcome, ${role} user!`);
-            return userData; 
+            return userData;
         } else if (response.status === 401) {
-            // Invalid credentials
             const errorData = await response.json();
             toast.error(errorData.message || "Invalid credentials or role.");
             return null;
         } else {
-            // Other server error (e.g., 500)
-            throw new Error(`Authentication failed with status: ${response.status}`);
+            // Try to parse a helpful message from the server
+            let text;
+            try {
+                const json = await response.json();
+                text = json.message || JSON.stringify(json);
+            } catch (e) {
+                text = await response.text();
+            }
+            console.error('Server returned non-OK:', response.status, text);
+            // Throw an Error containing server-provided message (useful in browser console)
+            throw new Error(`Authentication failed with status: ${response.status}. ${text}`);
         }
     } catch (error) {
         console.error("Error in authenticateLogin:", error);
@@ -54,7 +61,7 @@ export async function authenticateLogin(email, password, role) {
  */
 export function logout() {
     // Clear user-specific data from storage
-    localStorage.removeItem('userId'); 
+    localStorage.removeItem('userId');
     localStorage.removeItem('userRole');
     console.log("Client-side logout complete.");
 }
@@ -74,9 +81,9 @@ export async function fetchDashboardOverviewData() {
             const errorText = await response.text();
             throw new Error(`Server responded with status: ${response.status}. Body: ${errorText}`);
         }
-        
+
         // Data structure: { keyMetrics, monthlyRevenueData, giverStatusData, serviceUsageData }
-        return response.json(); 
+        return response.json();
     } catch (error) {
         console.error("Error fetching dashboard data:", error);
         toast.error("Failed to load dashboard data. Check the server connection.");
@@ -99,9 +106,9 @@ export async function fetchGivers() {
             const errorText = await response.text();
             throw new Error(`Server responded with status: ${response.status}. Body: ${errorText}`);
         }
-        
+
         // Returns an array of giver objects
-        return response.json(); 
+        return response.json();
     } catch (error) {
         console.error("Error fetching givers list:", error);
         toast.error("Failed to load Giver list. Check the server connection and logs.");
@@ -129,7 +136,7 @@ export async function updateGiverStatus(giverId, isVerified) {
             const errorData = await response.json();
             throw new Error(`Server status update failed: ${errorData.message}`);
         }
-        
+
         const message = isVerified ? "Giver successfully **Activated**." : "Giver successfully **Deactivated** (Set to Pending).";
         toast.success(message);
         return true;
@@ -182,7 +189,7 @@ export async function updateSystemSettings(settings) {
             const errorData = await response.json();
             throw new Error(`Server responded with status: ${response.status}. Message: ${errorData.message}`);
         }
-        
+
         const result = await response.json();
         toast.success(result.message || "Settings saved successfully.");
         return true;
