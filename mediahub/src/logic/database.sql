@@ -105,3 +105,14 @@ CREATE TABLE Booking (
     FOREIGN KEY (giver_id) REFERENCES Service_Giver(giver_id),
     FOREIGN KEY (client_id) REFERENCES Client(client_id)
 );
+
+CREATE TABLE Payment (
+  payment_id INT AUTO_INCREMENT PRIMARY KEY,
+  booking_id INT NOT NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (booking_id) REFERENCES Booking(booking_id)
+);
+
+ALTER TABLE Client
+ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
