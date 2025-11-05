@@ -1,9 +1,14 @@
-// /server/db.js (The REAL database module - MySQL2 and bcryptjs)
-import mysql from 'mysql2/promise'; 
-import bcrypt from 'bcryptjs'; 
+// server/db.js (top of file)
+import mysql from 'mysql2/promise';
+import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-dotenv.config(); // Load environment variables from .env file
+// Load .env relative to this file (works if server started from project root)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 // -------------------------------------------------------------------
 // 1. DATABASE CONNECTION SETUP
@@ -64,38 +69,50 @@ export async function authenticateLogin(email, password, role) {
             idColumn = 'giver_id';
             break;
         default:
+            console.warn(`[AUTH] Unknown role provided: ${role}`);
             return null;
     }
 
     const sql = `SELECT ${idColumn} AS id, password_hash FROM ${tableName} WHERE email = ?`;
     
     try {
-        const rows = await executeSql(sql, [email]); 
+        console.log(`[AUTH] Looking up user: email=${email}, role=${role}, table=${tableName}`);
+        const rows = await executeSql(sql, [email]);
 
-        // 💥 FIX: Check if a user was actually found
+        // If executeSql returned an error-like object, guard
+        if (!Array.isArray(rows)) {
+            console.error('[AUTH] Unexpected result from executeSql:', rows);
+            throw new Error('Unexpected DB response format.');
+        }
+
         if (rows.length === 0) {
-            console.log(`[DB Fail] Login attempt: No user found with email ${email} in table ${tableName}.`);
-            return null; // User not found, return null (not a crash)
+            console.log(`[AUTH] No user found with email ${email} in table ${tableName}.`);
+            return null; // correct: not found
         }
         
-        const user = rows[0]; // Now we know user is not undefined
+        const user = rows[0];
+        if (!user || !user.password_hash) {
+            console.warn(`[AUTH] User row missing password_hash for email ${email}:`, user);
+            return null;
+        }
 
-        // Perform the real password comparison using bcrypt
         const passwordMatch = await bcrypt.compare(password, user.password_hash);
 
         if (passwordMatch) {
-            console.log(`[DB SUCCESS] User ${user.id} logged in as ${role}.`);
-            return { id: user.id, role }; 
+            console.log(`[AUTH SUCCESS] User ${user.id} logged in as ${role}.`);
+            return { id: user.id, role };
         } else {
-            console.log(`[DB Fail] Login attempt: Password mismatch for email ${email}.`);
-            return null; // Password mismatch
+            console.log(`[AUTH FAIL] Password mismatch for email ${email}.`);
+            return null;
         }
 
     } catch (error) {
-        console.error('Error during authenticateLogin:', error);
-        throw new Error("Authentication failed due to a server error.");
+        console.error('Error during authenticateLogin (server/db.js):', error);
+        // rethrow so the route returns 500 and we see the full stack in server logs
+        throw error;
     }
 }
+
 
 
 // -------------------------------------------------------------------

@@ -15,7 +15,7 @@ import { authenticateLogin } from '@/logic/db';
 
 // 💥 NEW: Import the useAuth hook to access the global login function
 import { useAuth } from '../logic/auth'; 
-
+    
 export function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');

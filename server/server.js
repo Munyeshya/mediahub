@@ -1,14 +1,15 @@
-// /server/server.js (UPDATED with PUT route for Giver Status)
+// server/server.js (top of file)
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import * as db from './db.js'; // Imports all real database functions
 
-// Load environment variables from .env file
-dotenv.config();
-
-const app = express();
-const PORT = process.env.PORT || 3001; 
+// Ensure we load the .env located in the server directory (robust even when starting from project root)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Middleware
 app.use(cors({
