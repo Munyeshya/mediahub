@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; 
-import { Mail, Lock, LogIn, Chrome, MountainIcon, Users, Shield, Briefcase } from "lucide-react";
+import { Mail, Lock, LogIn, Chrome, MountainIcon, Users, Shield, Briefcase, Eye, EyeOff } from "lucide-react";
 import { FramerParticleBackground } from '../components/common/FramerParticleBackground';
 
 // IMPORT THE UNIFIED AUTHENTICATION FUNCTION
@@ -20,6 +20,7 @@ export function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [selectedRole, setSelectedRole] = useState('Client'); 
+    const [showPassword, setShowPassword] = useState(false); // <<-- visibility toggle state
     
     // 💥 NEW: Get the login function from the Auth Context
     const { login } = useAuth(); 
@@ -203,13 +204,23 @@ export function Login() {
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                                 <Input 
                                     id="password" 
-                                    type="password" 
+                                    type={showPassword ? 'text' : 'password'} /* <-- toggled type */
                                     placeholder="••••••••" 
                                     required 
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className={`pl-10 bg-gray-700 border-gray-600 text-white focus:border-${selectedRole === 'Admin' ? 'red' : 'amber'}-500`}
+                                    className={`pl-10 pr-12 bg-gray-700 border-gray-600 text-white focus:border-${selectedRole === 'Admin' ? 'red' : 'amber'}-500`}
                                 />
+
+                                {/* Visibility toggle button */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(prev => !prev)}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                >
+                                    {showPassword ? <EyeOff className="h-5 w-5 text-gray-300" /> : <Eye className="h-5 w-5 text-gray-300" />}
+                                </button>
                             </div>
                         </div>
 
