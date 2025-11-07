@@ -109,3 +109,92 @@ export function ServiceUsageBarChart({ data }) {
         </Card>
     );
 }
+
+// -----------------------------------------------------------------
+// 4. PLATFORM USAGE GROWTH CHART (Revenue + Bookings + Clients)
+// -----------------------------------------------------------------
+export function PlatformUsageChart({ data }) {
+    const formatRWF = (tick) => `RWF ${(tick / 1000000).toFixed(1)}M`;
+
+    return (
+        <Card className="bg-gray-800 border-gray-700 h-full">
+            <CardHeader>
+                <CardTitle className="text-xl text-white">Platform Usage Growth</CardTitle>
+            </CardHeader>
+            <CardContent className="h-[350px] pt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                        data={data}
+                        margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
+                    >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                        <XAxis dataKey="month" stroke="#9CA3AF" />
+                        <YAxis
+                            yAxisId="left"
+                            stroke="#9CA3AF"
+                            label={{
+                                value: 'Bookings / Clients',
+                                angle: -90,
+                                position: 'insideLeft',
+                                fill: '#9CA3AF',
+                            }}
+                        />
+                        <YAxis
+                            yAxisId="right"
+                            orientation="right"
+                            stroke="#9CA3AF"
+                            tickFormatter={formatRWF}
+                            label={{
+                                value: 'Revenue (RWF)',
+                                angle: 90,
+                                position: 'insideRight',
+                                fill: '#9CA3AF',
+                            }}
+                        />
+                        <Tooltip
+                            contentStyle={{
+                                backgroundColor: '#1F2937',
+                                border: '1px solid #4B5563',
+                            }}
+                            formatter={(value, name) => {
+                                if (name === 'revenue')
+                                    return [`RWF ${value.toLocaleString()}`, 'Revenue'];
+                                return [value, name === 'bookings' ? 'Bookings' : 'New Clients'];
+                            }}
+                        />
+                        <Legend />
+                        {/* Bookings as bars */}
+                        <Bar
+                            yAxisId="left"
+                            dataKey="bookings"
+                            name="Bookings"
+                            fill="#FBBF24"
+                            barSize={16}
+                        />
+                        {/* New clients as area */}
+                        <Area
+                            yAxisId="left"
+                            dataKey="newClients"
+                            name="New Clients"
+                            type="monotone"
+                            stroke="#34D399"
+                            fill="#34D399"
+                            fillOpacity={0.25}
+                        />
+                        {/* Revenue as line */}
+                        <Line
+                            yAxisId="right"
+                            type="monotone"
+                            dataKey="revenue"
+                            name="Revenue (RWF)"
+                            stroke="#60A5FA"
+                            strokeWidth={2}
+                            dot={{ r: 3 }}
+                            activeDot={{ r: 6 }}
+                        />
+                    </ComposedChart>
+                </ResponsiveContainer>
+            </CardContent>
+        </Card>
+    );
+}
