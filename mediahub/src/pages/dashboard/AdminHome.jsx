@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { fetchDashboardOverviewData } from '@/logic/db'; // Import the new data function
 import { DashboardMetricCard } from '@/components/dashboard/DashboardMetricCard';
-import { MonthlyRevenueChart, GiverStatusPieChart, ServiceUsageBarChart } from '@/components/dashboard/DashboardCharts';
+import { MonthlyRevenueChart, GiverStatusPieChart, ServiceUsageBarChart,PlatformUsageChart } from '@/components/dashboard/DashboardCharts';
 import { Loader2, DollarSign, Users, Calendar, BarChart, X, CheckCircle } from 'lucide-react';
 
 const formatterRWF = new Intl.NumberFormat('en-RW', { style: 'currency', currency: 'RWF', minimumFractionDigits: 0 });
+<PlatformUsageChart data={usageData} />
 
 export function AdminHome() {
     const [data, setData] = useState(null);
