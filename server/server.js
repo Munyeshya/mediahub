@@ -339,17 +339,7 @@ app.post('/api/reviews', async (req, res) => {
   }
 });
 
-app.get('/api/bookings/:id/review', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const review = await db.fetchBookingReview(id);
-    if (!review) return res.status(404).json({ message: "No review found" });
-    res.json(review);
-  } catch (error) {
-    console.error("Error fetching booking review:", error);
-    res.status(500).json({ message: "Failed to fetch booking review" });
-  }
-});
+
 
 
 app.get('/api/bookings/:id/review', async (req, res) => {
@@ -483,17 +473,7 @@ app.get("/api/givers", async (req, res) => {
   }
 });
 
-// GET portfolio for a specific giver
-app.get("/api/giver/:giverId/portfolio", async (req, res) => {
-  try {
-    const giverId = req.params.giverId;
-    const items = await db.fetchGiverPortfolio(giverId);
-    res.status(200).json(items);
-  } catch (error) {
-    console.error("Error fetching portfolio:", error);
-    res.status(500).json({ message: "Failed to fetch portfolio items." });
-  }
-});
+
 
 // POST new portfolio item (later for upload)
 app.post("/api/giver/:giverId/portfolio", async (req, res) => {
@@ -513,35 +493,58 @@ app.post("/api/giver/:giverId/portfolio", async (req, res) => {
     res.status(500).json({ message: "Failed to add portfolio item." });
   }
 });
-// Get single giver full profile
-app.get("/api/givers", async (req, res) => {
+// --- Get full giver profile ---
+app.get("/api/giver/:id", async (req, res) => {
   try {
-    const rows = await db.executeSql(`
-      SELECT 
-        sg.giver_id,
-        sg.name AS giver_name,
-        sg.email,
-        sg.is_verified,
-        COALESCE(p.bio, 'No bio provided') AS bio,
-        COALESCE(p.city, 'Unknown') AS city,
-        COALESCE(p.avg_rating, 0) AS avg_rating,
-        COALESCE(p.hourly_rate_RWF, 0) AS price_RWF,
-        COALESCE(st.service_name, 'Unlisted Service') AS service_name
-      FROM service_giver sg
-      LEFT JOIN profile p ON sg.giver_id = p.giver_id
-      LEFT JOIN giver_service_price gsp ON sg.giver_id = gsp.giver_id
-      LEFT JOIN service_type st ON gsp.service_id = st.service_id
-      WHERE sg.is_verified = 1
-      GROUP BY sg.giver_id
-      ORDER BY avg_rating DESC;
-    `);
-
-    res.json(rows);
+    const giver = await db.fetchGiverById(req.params.id);
+    if (!giver) return res.status(404).json({ message: "Giver not found." });
+    const bookings = await db.fetchGiverRecentBookings(req.params.id);
+    giver.recent_bookings = bookings;
+    res.json(giver);
   } catch (error) {
-    console.error("Error fetching givers:", error);
-    res.status(500).json({ message: "Failed to load givers." });
+    console.error("Error fetching giver:", error);
+    res.status(500).json({ message: "Failed to load giver details." });
   }
 });
+
+// --- Get giver portfolio images ---
+app.get("/api/giver/:id/portfolio", async (req, res) => {
+  try {
+    const images = await db.fetchGiverPortfolio(req.params.id);
+    res.json(images);
+  } catch (error) {
+    console.error("Error fetching giver portfolio:", error);
+    res.status(500).json({ message: "Failed to load portfolio." });
+  }
+});
+
+// ============================================================
+// 📦 CREATE A NEW BOOKING (Client → Giver)
+// ============================================================
+app.post("/api/bookings", async (req, res) => {
+  try {
+    const { giver_id, client_id, service_id, start_date, end_date, total_price_RWF } = req.body;
+
+    if (!giver_id || !client_id || !service_id || !start_date || !end_date || !total_price_RWF) {
+      return res.status(400).json({ message: "Missing required fields." });
+    }
+
+    const result = await db.createBooking({
+      giver_id,
+      client_id,
+      service_id,
+      start_date,
+      end_date,
+      total_price_RWF,
+    });
+
+    res.status(201).json({ message: "Booking created successfully.", booking: result });
+  } catch (error) {
+    console.error("Error creating booking:", error);
+    res.status(500).json({ message: "Failed to create booking." });
+  }
+});
+
 
 
 

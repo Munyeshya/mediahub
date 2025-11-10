@@ -990,7 +990,13 @@ export async function fetchActiveGiversWithServices(filters = {}) {
 // 🧩 Fetch all portfolio items for a given giver
 export async function fetchGiverPortfolio(giverId) {
   const sql = `
-    SELECT portfolio_id, title, description, media_url, media_type, uploaded_at
+    SELECT 
+      portfolio_id, 
+      title, 
+      description, 
+      media_url, 
+      media_type, 
+      uploaded_at
     FROM giver_portfolio
     WHERE giver_id = ?
     ORDER BY uploaded_at DESC;
@@ -1007,6 +1013,89 @@ export async function addGiverPortfolioItem(giverId, title, description, mediaUr
   const result = await executeSql(sql, [giverId, title, description, mediaUrl, mediaType]);
   return { id: result.insertId, giverId, title, description, mediaUrl, mediaType };
 }
+
+
+// -------------------------------------------------------------------
+// FETCH SINGLE GIVER DETAILS WITH RATING + REVIEWS
+// -------------------------------------------------------------------
+export async function fetchGiverById(giverId) {
+  const sql = `
+    SELECT 
+      sg.giver_id,
+      sg.name AS giver_name,
+      sg.email,
+      sg.is_verified,
+      COALESCE(p.city, 'Unknown') AS city,
+      COALESCE(p.bio, 'No bio available') AS bio,
+      COALESCE(p.avg_rating, 0) AS avg_rating,
+      COALESCE(p.hourly_rate_RWF, 0) AS hourly_rate_RWF,
+      ANY_VALUE(COALESCE(st.service_name, 'Unlisted Service')) AS service_name,
+      COUNT(DISTINCT b.booking_id) AS total_jobs,
+      COUNT(DISTINCT r.review_id) AS total_reviews,
+      COALESCE(AVG(r.rating), 0) AS avg_review_rating
+    FROM service_giver sg
+    LEFT JOIN profile p ON sg.giver_id = p.giver_id
+    LEFT JOIN giver_service_price gsp ON sg.giver_id = gsp.giver_id
+    LEFT JOIN service_type st ON gsp.service_id = st.service_id
+    LEFT JOIN booking b ON sg.giver_id = b.giver_id
+    LEFT JOIN review r ON b.booking_id = r.booking_id
+    WHERE sg.giver_id = ?
+    GROUP BY sg.giver_id;
+  `;
+  const rows = await executeSql(sql, [giverId]);
+  return rows[0] || null;
+}
+
+
+
+
+
+// -------------------------------------------------------------------
+// FETCH RECENT BOOKINGS BY GIVER (for profile display)
+// -------------------------------------------------------------------
+export async function fetchGiverRecentBookings(giverId) {
+  const sql = `
+    SELECT 
+      b.booking_id,
+      c.full_name AS client_name,
+      s.service_name,
+      b.total_price_RWF,
+      b.status,
+      b.created_at
+    FROM booking b
+    JOIN client c ON b.client_id = c.client_id
+    JOIN service_type s ON b.service_id = s.service_id
+    WHERE b.giver_id = ?
+    ORDER BY b.created_at DESC
+    LIMIT 5;
+  `;
+  return await executeSql(sql, [giverId]);
+}
+
+// ============================================================
+// CREATE NEW BOOKING
+// ============================================================
+export async function createBooking({ giver_id, client_id, service_id, start_date, end_date, total_price_RWF }) {
+  const sql = `
+    INSERT INTO booking (
+      giver_id, client_id, service_id, start_date, end_date, status, total_price_RWF, created_at
+    ) VALUES (?, ?, ?, ?, ?, 'Pending', ?, NOW());
+  `;
+  const result = await executeSql(sql, [
+    giver_id,
+    client_id,
+    service_id,
+    start_date,
+    end_date,
+    total_price_RWF,
+  ]);
+
+  // Return the created booking
+  const [booking] = await executeSql("SELECT * FROM booking WHERE booking_id = ?", [result.insertId]);
+  return booking;
+}
+
+
 
 
 

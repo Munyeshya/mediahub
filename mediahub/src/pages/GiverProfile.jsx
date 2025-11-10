@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "react-toastify";
-import { Star, Mail, MapPin, Camera, ArrowLeft, Calendar } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Star, Mail, MapPin, Camera, ArrowLeft, Calendar, User } from "lucide-react";
 
 export function GiverProfile() {
   const { id } = useParams();
@@ -14,9 +13,8 @@ export function GiverProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState(false);
 
-  // Fetch giver details & portfolio
   useEffect(() => {
-    if (!id) return;
+    // if (!id) return;
     const loadData = async () => {
       setIsLoading(true);
       try {
@@ -25,7 +23,7 @@ export function GiverProfile() {
           fetch(`http://localhost:3001/api/giver/${id}/portfolio`),
         ]);
 
-        if (!giverRes.ok) throw new Error("Giver not found");
+        if (!giverRes.ok) throw new Error("Failed to load giver details.");
         const giverData = await giverRes.json();
         setGiver(giverData);
 
@@ -59,7 +57,6 @@ export function GiverProfile() {
 
   return (
     <div className="bg-gray-900 text-white min-h-screen p-8">
-      {/* --- Header --- */}
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <Link to="/services">
@@ -69,6 +66,7 @@ export function GiverProfile() {
           </Link>
         </div>
 
+        {/* --- Giver Info --- */}
         <Card className="bg-gray-800 border border-gray-700 mb-8">
           <CardHeader className="flex justify-between items-center">
             <div>
@@ -80,13 +78,14 @@ export function GiverProfile() {
                 <MapPin className="h-4 w-4 mr-2" /> {giver.city}
               </p>
             </div>
+
             <div className="text-right">
               <div className="flex items-center justify-end space-x-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
                     className={`h-5 w-5 ${
-                      star <= Math.round(giver.avg_rating)
+                      star <= Math.round(giver.avg_review_rating)
                         ? "fill-amber-400 text-amber-400"
                         : "text-gray-600"
                     }`}
@@ -94,7 +93,7 @@ export function GiverProfile() {
                 ))}
               </div>
               <p className="text-gray-400 text-sm mt-1">
-                {Number(giver.avg_rating || 0).toFixed(1)} / 5
+                {Number(giver.avg_review_rating || 0).toFixed(1)} / 5 ({giver.total_reviews} reviews)
               </p>
               <p className="text-lg text-amber-400 font-bold mt-2">
                 RWF {Number(giver.hourly_rate_RWF || 0).toLocaleString()} / hr
@@ -104,6 +103,15 @@ export function GiverProfile() {
 
           <CardContent>
             <p className="text-gray-300 italic mt-2">{giver.bio}</p>
+
+            <div className="flex justify-between items-center mt-4 text-sm text-gray-400">
+              <p>
+                <strong>Jobs Completed:</strong> {giver.total_jobs}
+              </p>
+              <p>
+                <strong>Service:</strong> {giver.service_name}
+              </p>
+            </div>
 
             <div className="mt-6 text-right">
               <Button
@@ -116,8 +124,8 @@ export function GiverProfile() {
           </CardContent>
         </Card>
 
-        {/* --- Portfolio --- */}
-        <section>
+        {/* --- Portfolio Section --- */}
+        <section className="mb-10">
           <h2 className="text-2xl font-bold text-amber-500 mb-4">Portfolio</h2>
           {portfolio.length === 0 ? (
             <p className="text-gray-400">No portfolio images uploaded yet.</p>
@@ -144,6 +152,36 @@ export function GiverProfile() {
             </div>
           )}
         </section>
+
+        {/* --- Recent Bookings --- */}
+        <section>
+          <h2 className="text-2xl font-bold text-amber-500 mb-4">Recent Jobs</h2>
+          {giver.recent_bookings && giver.recent_bookings.length > 0 ? (
+            <div className="grid gap-4">
+              {giver.recent_bookings.map((b) => (
+                <Card key={b.booking_id} className="bg-gray-800 border border-gray-700">
+                  <CardHeader className="flex justify-between">
+                    <div>
+                      <CardTitle className="text-white text-lg">{b.service_name}</CardTitle>
+                      <p className="text-sm text-gray-400 flex items-center mt-1">
+                        <User className="h-4 w-4 mr-2" /> {b.client_name}
+                      </p>
+                    </div>
+                    <p className="text-amber-400 font-semibold">
+                      {b.status} — RWF {Number(b.total_price_RWF).toLocaleString()}
+                    </p>
+                  </CardHeader>
+                  <CardContent className="text-sm text-gray-400 flex items-center">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    {new Date(b.created_at).toLocaleDateString()}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-400">No jobs found.</p>
+          )}
+        </section>
       </div>
 
       {/* --- Booking Modal --- */}
@@ -164,9 +202,6 @@ export function GiverProfile() {
                 <strong>Rate:</strong> RWF{" "}
                 {Number(giver.hourly_rate_RWF || 0).toLocaleString()} / hr
               </p>
-              <p>
-                <strong>Rating:</strong> ⭐ {Number(giver.avg_rating || 0).toFixed(1)}
-              </p>
 
               <label className="block text-gray-400 text-sm mt-4">Select Date</label>
               <input
@@ -176,7 +211,7 @@ export function GiverProfile() {
 
               <label className="block text-gray-400 text-sm mt-4">Project Details</label>
               <textarea
-                placeholder="Describe what you want to book..."
+                placeholder="Describe your project..."
                 className="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white"
               />
 
