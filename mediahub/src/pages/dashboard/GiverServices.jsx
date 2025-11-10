@@ -2,12 +2,13 @@ import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RotateCw, Edit, Save } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { RotateCw, Edit, Save, Eye, EyeOff } from "lucide-react";
 import { toast } from "react-toastify";
 import { useAuth } from "@/logic/auth";
 
 export function GiverServices() {
-  const { user } = useAuth(); // giver_id from logged-in user
+  const { user } = useAuth(); // giver_id
   const [services, setServices] = useState([]);
   const [isEditing, setIsEditing] = useState(null);
   const [updatedPrice, setUpdatedPrice] = useState("");
@@ -38,19 +39,21 @@ export function GiverServices() {
     fetchServices();
   }, [API_URL]);
 
-  // --- Handle Save ---
+  // --- Save updated price ---
   const handleSave = async (serviceId) => {
     try {
-      const res = await fetch(`http://localhost:3001/api/giver/${user.id}/services/${serviceId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ price_RWF: updatedPrice }),
-      });
+      const res = await fetch(
+        `http://localhost:3001/api/giver/${user.id}/services/${serviceId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ price_RWF: updatedPrice }),
+        }
+      );
 
       if (!res.ok) throw new Error("Failed to update price.");
       toast.success("Service price updated successfully! 💰");
 
-      // Update UI
       setServices((prev) =>
         prev.map((s) =>
           s.service_id === serviceId ? { ...s, price_RWF: updatedPrice } : s
@@ -63,6 +66,35 @@ export function GiverServices() {
     }
   };
 
+  // --- Toggle visibility ---
+  const toggleVisibility = async (serviceId, currentState) => {
+    try {
+      const newState = currentState ? 0 : 1;
+      const res = await fetch(
+        `http://localhost:3001/api/giver/${user.id}/services/${serviceId}/visibility`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_active: newState }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Failed to update visibility.");
+      toast.success(
+        newState ? "Service is now active (visible)." : "Service is now hidden."
+      );
+
+      setServices((prev) =>
+        prev.map((s) =>
+          s.service_id === serviceId ? { ...s, is_active: newState } : s
+        )
+      );
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  // --- UI states ---
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-40 text-amber-500">
@@ -97,6 +129,7 @@ export function GiverServices() {
                   <th className="py-2">Service Name</th>
                   <th className="py-2">Base Unit</th>
                   <th className="py-2 text-right">Price (RWF)</th>
+                  <th className="py-2 text-center">Visibility</th>
                   <th className="py-2 text-right">Actions</th>
                 </tr>
               </thead>
@@ -117,10 +150,23 @@ export function GiverServices() {
                           className="w-24 bg-gray-700 border-gray-600 text-white text-right"
                         />
                       ) : (
-                        <span>
-                          {Number(s.price_RWF).toLocaleString()}
-                        </span>
+                        <span>{Number(s.price_RWF).toLocaleString()}</span>
                       )}
+                    </td>
+                    <td className="py-2 text-center">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() =>
+                          toggleVisibility(s.service_id, s.is_active)
+                        }
+                      >
+                        {s.is_active ? (
+                          <Eye className="h-5 w-5 text-green-400" />
+                        ) : (
+                          <EyeOff className="h-5 w-5 text-gray-500" />
+                        )}
+                      </Button>
                     </td>
                     <td className="py-2 text-right">
                       {isEditing === s.service_id ? (

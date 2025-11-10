@@ -818,55 +818,56 @@ export async function updateReview(reviewId, rating, comment) {
 }
 
 export async function fetchGiverDashboard(giverId) {
+  // 1️⃣ Profile info
   const [profile] = await executeSql(
-    "SELECT name, email, is_verified, created_at, (SELECT avg_rating FROM profile WHERE giver_id = ?) AS avg_rating FROM service_giver WHERE giver_id = ?",
-    [giverId, giverId]
-  );
-
-  const [stats] = await executeSql(
     `SELECT 
-      COUNT(DISTINCT gsp.service_id) AS active_services,
-      COUNT(DISTINCT b.client_id) AS total_clients,
-      COALESCE(SUM(b.total_price_RWF), 0) AS total_earnings
-    FROM service_giver sg
-    LEFT JOIN booking b ON sg.giver_id = b.giver_id
-    LEFT JOIN giver_service_price gsp ON sg.giver_id = gsp.giver_id
-    WHERE sg.giver_id = ?`,
+        sg.name,
+        sg.email,
+        sg.is_verified,
+        sg.created_at,
+        COALESCE(p.avg_rating, 0) AS avg_rating
+     FROM service_giver sg
+     LEFT JOIN profile p ON sg.giver_id = p.giver_id
+     WHERE sg.giver_id = ?`,
     [giverId]
   );
 
+  // 2️⃣ Stats — earnings now based on bookings
+  const [stats] = await executeSql(
+    `SELECT 
+        COUNT(DISTINCT gsp.service_id) AS active_services,
+        COUNT(DISTINCT b.client_id) AS total_clients,
+        COALESCE(SUM(CASE WHEN b.status = 'Completed' THEN b.total_price_RWF ELSE 0 END), 0) AS total_earnings
+     FROM service_giver sg
+     LEFT JOIN booking b ON sg.giver_id = b.giver_id
+     LEFT JOIN giver_service_price gsp ON sg.giver_id = gsp.giver_id
+     WHERE sg.giver_id = ?`,
+    [giverId]
+  );
+
+  // 3️⃣ Recent bookings (for chart/list)
   const recentBookings = await executeSql(
     `SELECT 
-      b.booking_id,
-      c.full_name AS client_name,
-      st.service_name,
-      b.status,
-      b.total_price_RWF
-    FROM booking b
-    JOIN client c ON b.client_id = c.client_id
-    JOIN service_type st ON b.service_id = st.service_id
-    WHERE b.giver_id = ?
-    ORDER BY b.created_at DESC
-    LIMIT 6`,
+        b.booking_id,
+        c.full_name AS client_name,
+        st.service_name,
+        b.status,
+        b.total_price_RWF,
+        b.created_at
+     FROM booking b
+     JOIN client c ON b.client_id = c.client_id
+     JOIN service_type st ON b.service_id = st.service_id
+     WHERE b.giver_id = ?
+     ORDER BY b.created_at DESC
+     LIMIT 6`,
     [giverId]
   );
 
   return { profile, stats, recentBookings };
 }
 
-export async function fetchGiverServices(giverId) {
-  return await executeSql(
-    `SELECT 
-        st.service_id,
-        st.service_name,
-        st.base_unit,
-        gsp.price_RWF
-     FROM giver_service_price gsp
-     JOIN service_type st ON gsp.service_id = st.service_id
-     WHERE gsp.giver_id = ?`,
-    [giverId]
-  );
-}
+
+
 
 export async function updateGiverServicePrice(giverId, serviceId, price) {
   return await executeSql(
@@ -876,4 +877,44 @@ export async function updateGiverServicePrice(giverId, serviceId, price) {
     [price, giverId, serviceId]
   );
 }
+
+export async function fetchGiverServices(giverId) {
+  return await executeSql(
+    `SELECT 
+        st.service_id,
+        st.service_name,
+        st.base_unit,
+        gsp.price_RWF,
+        gsp.is_active
+     FROM giver_service_price gsp
+     JOIN service_type st ON gsp.service_id = st.service_id
+     WHERE gsp.giver_id = ?`,
+    [giverId]
+  );
+}
+
+export async function updateGiverServiceVisibility(giverId, serviceId, isActive) {
+  return await executeSql(
+    `UPDATE giver_service_price
+     SET is_active = ?
+     WHERE giver_id = ? AND service_id = ?`,
+    [isActive, giverId, serviceId]
+  );
+}
+
+export async function fetchGiverEarnings(giverId) {
+  return await executeSql(
+    `SELECT 
+        DATE_FORMAT(b.created_at, '%Y-%m') AS month,
+        COALESCE(SUM(b.total_price_RWF), 0) AS total_earnings
+     FROM booking b
+     WHERE b.giver_id = ? AND b.status = 'Completed'
+     GROUP BY month
+     ORDER BY month ASC;`,
+    [giverId]
+  );
+}
+
+
+
 

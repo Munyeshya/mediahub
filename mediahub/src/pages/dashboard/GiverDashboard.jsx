@@ -8,6 +8,7 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { useAuth } from "@/logic/auth";
 import { Button } from "@/components/ui/button";
 import { GiverServices } from "./GiverServices";
+import { GiverEarnings } from "./GiverEarnings";
 
 
 // ✅ ---- Giver Home Page ----
@@ -209,6 +210,7 @@ export function GiverDashboard() {
       >
         <Route index element={<GiverHome />} />
         <Route path="services" element={<GiverServices />} />
+        <Route path="earnings" element={<GiverEarnings />} />
       </Route>
     </Routes>
   );

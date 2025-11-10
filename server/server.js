@@ -439,6 +439,32 @@ app.put("/api/giver/:id/services/:serviceId", async (req, res) => {
   }
 });
 
+// Toggle service visibility (active/inactive)
+app.put("/api/giver/:id/services/:serviceId/visibility", async (req, res) => {
+  const { id, serviceId } = req.params;
+  const { is_active } = req.body;
+
+  try {
+    await db.updateGiverServiceVisibility(id, serviceId, is_active);
+    res.status(200).json({ message: "Service visibility updated successfully." });
+  } catch (err) {
+    console.error("Error updating service visibility:", err);
+    res.status(500).json({ message: "Failed to update service visibility." });
+  }
+});
+// Fetch giver monthly earnings
+app.get("/api/giver/:id/earnings", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const data = await db.fetchGiverEarnings(id);
+    res.status(200).json(data);
+  } catch (err) {
+    console.error("Error fetching giver earnings:", err);
+    res.status(500).json({ message: "Failed to load earnings data." });
+  }
+});
+
+
 
 
 
