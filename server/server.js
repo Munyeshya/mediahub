@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as db from './db.js'; // Import your DB functions
+import { pool } from "./db.js";
 import { fetchServices, addService, updateService, deleteService } from "./db.js";
 
 // --- FIX: create the Express app before using app.use(...) ---

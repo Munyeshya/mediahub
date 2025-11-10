@@ -9,6 +9,10 @@ import { useAuth } from "@/logic/auth";
 import { Button } from "@/components/ui/button";
 import { GiverServices } from "./GiverServices";
 import { GiverEarnings } from "./GiverEarnings";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "react-toastify";
+import { Calendar, User, FileText } from "lucide-react";
+
 
 
 // ✅ ---- Giver Home Page ----
@@ -18,6 +22,43 @@ function GiverHome() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // --- Handle Booking Status Update ---
+    const handleBookingStatus = async (bookingId, newStatus) => {
+        setLoadingAction(true);
+        try {
+            const res = await fetch(
+                `http://localhost:3001/api/bookings/${bookingId}/status`,
+                {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ status: newStatus }),
+                }
+            );
+
+            if (!res.ok) throw new Error("Failed to update booking status");
+            const data = await res.json();
+            toast.success(data.message);
+
+            // 🔄 Update UI instantly
+            setData((prev) => ({
+                ...prev,
+                recentBookings: prev.recentBookings.map((b) =>
+                    b.booking_id === bookingId ? { ...b, status: newStatus } : b
+                ),
+            }));
+
+            // Close modal
+            setSelectedBooking(null);
+        } catch (err) {
+            toast.error(err.message);
+        } finally {
+            setLoadingAction(false);
+        }
+    };
+
+
+    const [selectedBooking, setSelectedBooking] = useState(null);
+    const [loadingAction, setLoadingAction] = useState(false);
     const API_URL = user?.id
         ? `http://localhost:3001/api/giver/${user.id}/dashboard`
         : null;
@@ -161,52 +202,110 @@ function GiverHome() {
                                         <td className="py-2">{b.service_name}</td>
                                         <td
                                             className={`py-2 ${b.status === "Completed"
-                                                    ? "text-green-400"
-                                                    : "text-amber-400"
+                                                ? "text-green-400"
+                                                : "text-amber-400"
                                                 }`}
                                         >
                                             {b.status}
                                         </td>
-                                        <td className="py-2 text-right space-x-2">
+                                        <td className="py-2 text-right">
                                             <span className="block mb-1 text-sm text-gray-300">
                                                 RWF {Number(b.total_price_RWF).toLocaleString()}
                                             </span>
-                                            {b.status === "Pending" && (
-                                                <>
-                                                    <Button
-                                                        size="sm"
-                                                        className="bg-green-500 hover:bg-green-400 text-gray-900"
-                                                        onClick={() => handleBookingStatus(b.booking_id, "Accepted")}
-                                                    >
-                                                        Accept
-                                                    </Button>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className="border-red-500 text-red-400 hover:bg-red-900/20"
-                                                        onClick={() => handleBookingStatus(b.booking_id, "Rejected")}
-                                                    >
-                                                        Reject
-                                                    </Button>
-                                                </>
-                                            )}
-                                            {b.status === "Accepted" && (
-                                                <Button
-                                                    size="sm"
-                                                    className="bg-blue-500 hover:bg-blue-400 text-white"
-                                                    onClick={() => handleBookingStatus(b.booking_id, "Completed")}
-                                                >
-                                                    Mark Done
-                                                </Button>
-                                            )}
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="border-amber-500 text-amber-500 hover:bg-amber-900/20"
+                                                onClick={() => setSelectedBooking(b)}
+                                            >
+                                                View Details
+                                            </Button>
                                         </td>
 
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
+
                     )}
                 </CardContent>
+                {selectedBooking && (
+                    <Dialog open={!!selectedBooking} onOpenChange={() => setSelectedBooking(null)}>
+                        <DialogContent className="bg-gray-900 border border-gray-700 text-white max-w-lg">
+                            <DialogHeader>
+                                <DialogTitle className="text-2xl font-bold text-amber-500">
+                                    Booking Details
+                                </DialogTitle>
+                            </DialogHeader>
+
+                            <div className="space-y-3 mt-4">
+                                <p><strong>Client:</strong> {selectedBooking.client_name}</p>
+                                <p><strong>Service:</strong> {selectedBooking.service_name}</p>
+                                <p>
+                                    <strong>Status:</strong>{" "}
+                                    <span className="text-amber-400">{selectedBooking.status}</span>
+                                </p>
+                                <p>
+                                    <strong>Total:</strong> RWF{" "}
+                                    {Number(selectedBooking.total_price_RWF).toLocaleString()}
+                                </p>
+                                <p className="flex items-center space-x-2 text-gray-300">
+                                    <Calendar className="h-4 w-4 text-amber-500" />
+                                    <span>
+                                        {new Date(selectedBooking.start_date).toLocaleDateString()} →{" "}
+                                        {new Date(selectedBooking.end_date).toLocaleDateString()}
+                                    </span>
+                                </p>
+
+                                {selectedBooking.notes && (
+                                    <div className="border-t border-gray-700 pt-2">
+                                        <p className="text-gray-400 text-sm italic">
+                                            “{selectedBooking.notes}”
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* ✅ Action Buttons */}
+                                {selectedBooking.status === "Pending" && (
+                                    <div className="flex space-x-3 mt-4">
+                                        <Button
+                                            disabled={loadingAction}
+                                            className="flex-1 bg-green-500 hover:bg-green-400 text-gray-900"
+                                            onClick={() =>
+                                                handleBookingStatus(selectedBooking.booking_id, "Accepted")
+                                            }
+                                        >
+                                            Accept
+                                        </Button>
+                                        <Button
+                                            disabled={loadingAction}
+                                            variant="outline"
+                                            className="flex-1 border-red-500 text-red-400 hover:bg-red-900/20"
+                                            onClick={() =>
+                                                handleBookingStatus(selectedBooking.booking_id, "Rejected")
+                                            }
+                                        >
+                                            Reject
+                                        </Button>
+                                    </div>
+                                )}
+
+                                {selectedBooking.status === "Accepted" && (
+                                    <Button
+                                        disabled={loadingAction}
+                                        className="w-full bg-blue-500 hover:bg-blue-400 text-white mt-4"
+                                        onClick={() =>
+                                            handleBookingStatus(selectedBooking.booking_id, "Completed")
+                                        }
+                                    >
+                                        Mark Completed
+                                    </Button>
+                                )}
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                )}
+
             </Card>
         </div>
     );

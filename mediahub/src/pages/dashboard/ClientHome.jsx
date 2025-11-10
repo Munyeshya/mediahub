@@ -32,34 +32,7 @@ export function ClientHome() {
     };
     fetchData();
   }, [API_URL]);
-  const handleBookingStatus = async (bookingId, newStatus) => {
-  try {
-    const res = await fetch(
-      `http://localhost:3001/api/bookings/${bookingId}/status`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      }
-    );
-
-    if (!res.ok) throw new Error("Failed to update booking status");
-    const data = await res.json();
-
-    toast.success(data.message);
-
-    // ✅ Refresh the bookings dynamically after update
-    setData((prev) => ({
-      ...prev,
-      recentBookings: prev.recentBookings.map((b) =>
-        b.booking_id === bookingId ? { ...b, status: newStatus } : b
-      ),
-    }));
-  } catch (err) {
-    toast.error(err.message);
-  }
-};
-
+  
 
   if (!user) {
     return (
