@@ -542,46 +542,70 @@ export async function fetchGiverDetails(giverId) {
   }
 }
 
-// --- FETCH CLIENT DASHBOARD DATA ---
+
+// ✅ DYNAMIC CLIENT DASHBOARD DATA
 export async function fetchClientDashboardData(clientId) {
-  const sql = `
-    SELECT 
-      c.full_name AS name,
-      c.email,
-      COUNT(DISTINCT b.booking_id) AS total_bookings,
-      COALESCE(SUM(pay.amount), 0) AS total_spent,
-      SUM(CASE WHEN b.status = 'Completed' THEN 1 ELSE 0 END) AS completed,
-      SUM(CASE WHEN b.status = 'Pending' THEN 1 ELSE 0 END) AS pending
-    FROM client c
-    LEFT JOIN booking b ON c.client_id = b.client_id
-    LEFT JOIN payment pay ON b.booking_id = pay.booking_id
-    WHERE c.client_id = ?
-    GROUP BY c.client_id;
-  `;
-
-  const sqlRecent = `
-    SELECT 
-      b.booking_id, st.service_name, b.status, b.total_price_RWF, b.created_at
-    FROM booking b
-    JOIN service_type st ON b.service_id = st.service_id
-    WHERE b.client_id = ?
-    ORDER BY b.created_at DESC
-    LIMIT 5;
-  `;
-
   try {
-    const [rows] = await pool.query(sql, [clientId]);
-    const [recent] = await pool.query(sqlRecent, [clientId]);
+    // --- CLIENT PROFILE ---
+    const clientSql = `
+      SELECT client_id AS id, full_name AS name, email, created_at
+      FROM Client
+      WHERE client_id = ?;
+    `;
+    const [client] = await executeSql(clientSql, [clientId]);
+    if (!client) throw new Error("Client not found");
 
-    if (rows.length === 0) throw new Error("Client not found.");
+    // --- STATS ---
+    const statsSql = `
+      SELECT 
+        COUNT(*) AS total_bookings,
+        SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) AS completed,
+        SUM(CASE WHEN status = 'Pending' THEN 1 ELSE 0 END) AS pending
+      FROM Booking
+      WHERE client_id = ?;
+    `;
+    const [stats] = await executeSql(statsSql, [clientId]);
+
+    // --- SPENDING ---
+    const spendSql = `
+      SELECT COALESCE(SUM(p.amount), 0) AS total_spent
+      FROM Payment p
+      JOIN Booking b ON p.booking_id = b.booking_id
+      WHERE b.client_id = ?;
+    `;
+    const [spent] = await executeSql(spendSql, [clientId]);
+
+    // --- RECENT BOOKINGS (last 5) ---
+    const recentSql = `
+      SELECT 
+        b.booking_id,
+        s.service_name,
+        b.status,
+        b.total_price_RWF,
+        b.created_at
+      FROM Booking b
+      JOIN Service_Type s ON b.service_id = s.service_id
+      WHERE b.client_id = ?
+      ORDER BY b.created_at DESC
+      LIMIT 5;
+    `;
+    const recentBookings = await executeSql(recentSql, [clientId]);
 
     return {
-      profile: rows[0],
-      recentBookings: recent,
+      profile: {
+        id: client.id,
+        name: client.name,
+        email: client.email,
+        joined: client.created_at,
+        total_bookings: stats.total_bookings || 0,
+        completed: stats.completed || 0,
+        pending: stats.pending || 0,
+        total_spent: spent.total_spent || 0,
+      },
+      recentBookings,
     };
-  } catch (err) {
-    console.error("[DB Query Error: fetchClientDashboardData]", err);
-    throw new Error("Failed to fetch client dashboard data.");
+  } catch (error) {
+    console.error("[DB] fetchClientDashboardData error:", error);
+    throw error;
   }
 }
-

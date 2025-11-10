@@ -40,6 +40,21 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// ===============================================
+//  CLIENT DASHBOARD ROUTE
+// ===============================================
+app.get("/api/client/:clientId/dashboard", async (req, res) => {
+  const { clientId } = req.params;
+  try {
+    const dashboard = await db.fetchClientDashboardData(clientId);
+    res.status(200).json(dashboard);
+  } catch (error) {
+    console.error("Error fetching client dashboard data:", error);
+    res.status(500).json({ message: "Failed to load client dashboard." });
+  }
+});
+
+
 
 // --- 2. ADMIN DASHBOARD ROUTE ---
 app.get('/api/admin/dashboard', async (req, res) => {
