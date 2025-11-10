@@ -268,3 +268,15 @@ app.get("/api/client/dashboard/:clientId", async (req, res) => {
   }
 });
 
+// --- CLIENT DASHBOARD OVERVIEW ---
+app.get("/api/client/:clientId/dashboard", async (req, res) => {
+  const { clientId } = req.params;
+  try {
+    const clientData = await db.fetchClientDashboardData(clientId);
+    res.status(200).json(clientData);
+  } catch (error) {
+    console.error("Client Dashboard Error:", error);
+    res.status(500).json({ message: "Failed to fetch client dashboard data." });
+  }
+});
+

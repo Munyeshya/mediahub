@@ -1,55 +1,199 @@
 // src/pages/dashboard/ClientDashboard.jsx
-import React from 'react';
-import { Routes, Route, Outlet } from 'react-router-dom';
-import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
-import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
+import React, { useState, useEffect } from "react";
+import { Routes, Route, Outlet } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, Calendar, DollarSign, CheckCircle, Clock } from "lucide-react";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
+import { useAuth } from "@/logic/auth"; // ✅ get logged-in user (role + id)
 
-// Placeholder Component for the Main Overview
+// ✅ ---- CLIENT HOME PAGE ----
 function ClientHome() {
-    return (
-        <>
-            <h2 className="text-3xl font-bold text-white mb-6">Welcome Back!</h2>
-            <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 text-gray-300">
-                View your recent bookings and messages.
+    const { user } = useAuth(); // user = { id, role, email }
+    const [data, setData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    const API_URL = user?.id
+        ? `http://localhost:3001/api/client/${user.id}/dashboard`
+        : null;
+
+    useEffect(() => {
+        if (!API_URL) return; // Wait until user is available
+        const fetchData = async () => {
+            try {
+                const res = await fetch(API_URL);
+                if (!res.ok) throw new Error("Failed to load dashboard data.");
+                const json = await res.json();
+                setData(json);
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchData();
+    }, [API_URL]);
+
+    if (!user) {
+        return (
+            <div className="text-center text-gray-400 bg-gray-800 p-6 rounded-lg border border-gray-700">
+                <p>You need to log in to view your dashboard.</p>
             </div>
-        </>
+        );
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-40 text-amber-500">
+                <Loader2 className="w-8 h-8 animate-spin mr-3" />
+                <p>Loading your dashboard...</p>
+            </div>
+        );
+    }
+
+    if (error || !data) {
+        return (
+            <div className="text-center text-red-400 bg-red-900/10 border border-red-700 rounded-lg p-6">
+                <p>Failed to load dashboard: {error || "Unknown error"}</p>
+            </div>
+        );
+    }
+
+    const { profile, recentBookings } = data;
+
+    return (
+        <div className="space-y-8">
+            <h2 className="text-3xl font-bold text-white">
+                Welcome back, {profile.name.split(" ")[0]} 👋
+            </h2>
+
+            {/* --- Summary Cards --- */}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                        <CardTitle className="flex items-center text-green-400">
+                            <CheckCircle className="w-5 h-5 mr-2" /> Completed
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-3xl font-bold text-white">
+                        {profile.completed}
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                        <CardTitle className="flex items-center text-amber-400">
+                            <Clock className="w-5 h-5 mr-2" /> Pending
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-3xl font-bold text-white">
+                        {profile.pending}
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                        <CardTitle className="flex items-center text-blue-400">
+                            <Calendar className="w-5 h-5 mr-2" /> Total Bookings
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-3xl font-bold text-white">
+                        {profile.total_bookings}
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                        <CardTitle className="flex items-center text-purple-400">
+                            <DollarSign className="w-5 h-5 mr-2" /> Total Spent
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-3xl font-bold text-green-400">
+                        RWF {Number(profile.total_spent).toLocaleString()}
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* --- Recent Bookings --- */}
+            <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                    <CardTitle className="text-xl text-white">Recent Bookings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {recentBookings.length === 0 ? (
+                        <p className="text-gray-400">No recent bookings found.</p>
+                    ) : (
+                        <table className="min-w-full text-gray-300">
+                            <thead className="border-b border-gray-700 text-left">
+                                <tr>
+                                    <th className="py-2">Service</th>
+                                    <th className="py-2">Status</th>
+                                    <th className="py-2">Price</th>
+                                    <th className="py-2">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {recentBookings.map((b) => (
+                                    <tr
+                                        key={b.booking_id}
+                                        className="border-b border-gray-800 hover:bg-gray-700/50"
+                                    >
+                                        <td className="py-2">{b.service_name}</td>
+                                        <td
+                                            className={`py-2 ${
+                                                b.status === "Completed"
+                                                    ? "text-green-400"
+                                                    : "text-amber-400"
+                                            }`}
+                                        >
+                                            {b.status}
+                                        </td>
+                                        <td className="py-2">
+                                            RWF {Number(b.total_price_RWF).toLocaleString()}
+                                        </td>
+                                        <td className="py-2">
+                                            {new Date(b.created_at).toLocaleDateString()}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
     );
 }
 
-// Main Layout Component for the Client Dashboard
-const ClientDashboardLayout = ({ title }) => {
-    const role = "Client"; // Hardcode for ClientDashboard
-    
+// ✅ ---- DASHBOARD LAYOUT ----
+function ClientDashboardLayout({ title }) {
+    const role = "Client";
     return (
         <div className="flex min-h-screen bg-gray-950">
-            {/* DESKTOP SIDEBAR: Visible only on md screens and larger */}
             <aside className="hidden md:block w-64 flex-shrink-0 h-screen sticky top-0">
                 <DashboardSidebar role={role} />
             </aside>
-            
             <div className="flex-1 flex flex-col">
-                {/* Pass the role to the Header so it can render the mobile sidebar */}
-                <DashboardHeader title={title} role={role} /> 
+                <DashboardHeader title={title} role={role} />
                 <main className="p-4 md:p-8 flex-1 overflow-y-auto">
-                    <Outlet /> {/* Renders the nested route component (e.g., ClientHome) */}
+                    <Outlet />
                 </main>
             </div>
         </div>
     );
-};
+}
 
-
+// ✅ ---- MAIN CLIENT DASHBOARD ----
 export function ClientDashboard() {
     return (
         <Routes>
-            <Route path="/" element={<ClientDashboardLayout title="Client Dashboard" />}>
-                
-                {/* Default route: /dashboard/client */}
-                <Route index element={<ClientHome />} /> 
-                
-                {/* Other Client routes will go here: */}
-                {/* <Route path="bookings" element={<MyBookings />} /> */} 
-                
+            <Route
+                path="/"
+                element={<ClientDashboardLayout title="Client Dashboard" />}
+            >
+                <Route index element={<ClientHome />} />
+                {/* Future: <Route path="bookings" element={<MyBookings />} /> */}
             </Route>
         </Routes>
     );

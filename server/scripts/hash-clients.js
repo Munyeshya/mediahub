@@ -1,53 +1,58 @@
 // server/scripts/hash-clients.js
-import dotenv from 'dotenv';
-dotenv.config();
+import mysql from "mysql2/promise";
+import bcrypt from "bcryptjs";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
-import mysql from 'mysql2/promise';
-import bcrypt from 'bcryptjs';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, "../.env") });
 
-const DB_HOST = process.env.DB_HOST || '127.0.0.1';
-const DB_USER = process.env.DB_USER || 'root';
-const DB_PASS = process.env.DB_PASSWORD || '';
-const DB_NAME = process.env.DB_NAME || 'mediahub';
-const DB_PORT = process.env.DB_PORT ? Number(process.env.DB_PORT) : 3307;
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
+});
 
-async function main() {
-  const pool = mysql.createPool({
-    host: DB_HOST,
-    user: DB_USER,
-    password: DB_PASS,
-    database: DB_NAME,
-    port: DB_PORT,
-    waitForConnections: true,
-    connectionLimit: 5,
-  });
-
+async function hashClientPasswords() {
   try {
-    // Choose the plaintext password clients will get
-    const PLAINTEXT_PASSWORD = 'clientpass123'; // <-- change this if you want
+    const [clients] = await pool.query("SELECT client_id, email, password_hash FROM client");
 
-    console.log('Fetching clients...');
-    const [rows] = await pool.query('SELECT client_id, email FROM Client');
+    for (const client of clients) {
+      // Skip already hashed ones
+      if (client.password_hash.startsWith("$2b$")) {
+        console.log(`Skipping already hashed client: ${client.email}`);
+        continue;
+      }
 
-    if (!rows.length) {
-      console.log('No client rows found. Exiting.');
-      return;
+      const plainPassword = {
+        "alice@gmail.com": "alice123",
+        "bob@gmail.com": "bob123",
+        "carol@gmail.com": "carol123",
+        "daniel@gmail.com": "daniel123",
+        "emmy@gmail.com": "emmy123",
+        "frank@gmail.com": "frank123",
+        "gina@gmail.com": "gina123"
+      }[client.email] || "default123";
+
+      const newHash = await bcrypt.hash(plainPassword, 10);
+      await pool.query("UPDATE client SET password_hash = ? WHERE client_id = ?", [
+        newHash,
+        client.client_id,
+      ]);
+
+      console.log(`✅ Updated password for: ${client.email}`);
     }
 
-    console.log(`Found ${rows.length} clients. Hashing password and updating DB...`);
-    for (const r of rows) {
-      const hash = await bcrypt.hash(PLAINTEXT_PASSWORD, 10);
-      await pool.query('UPDATE Client SET password_hash = ? WHERE client_id = ?', [hash, r.client_id]);
-      console.log(`Updated client_id=${r.client_id} (${r.email})`);
-    }
-
-    console.log('All client passwords updated.');
-    console.log(`They can all log in with: ${PLAINTEXT_PASSWORD}`);
+    console.log("🎉 All client passwords are now hashed!");
+    process.exit(0);
   } catch (err) {
-    console.error('Error:', err);
-  } finally {
-    await pool.end();
+    console.error("❌ Error hashing passwords:", err);
+    process.exit(1);
   }
 }
 
-main();
+hashClientPasswords();
