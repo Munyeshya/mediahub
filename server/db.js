@@ -916,7 +916,7 @@ export async function fetchGiverEarnings(giverId) {
 }
 
 export async function fetchActiveGiversWithServices(filters = {}) {
-  const { category, minRating, verifiedOnly, minPrice, maxPrice } = filters;
+  const { category, minRating, verifiedOnly, minPrice, maxPrice, keyword } = filters;
 
   let sql = `
     SELECT 
@@ -940,6 +940,20 @@ export async function fetchActiveGiversWithServices(filters = {}) {
   `;
 
   const params = [];
+
+  // ✅ Keyword search
+  if (keyword) {
+    sql += `
+      AND (
+        sg.name LIKE ? OR
+        sg.email LIKE ? OR
+        p.bio LIKE ? OR
+        st.service_name LIKE ?
+      )
+    `;
+    const kw = `%${keyword}%`;
+    params.push(kw, kw, kw, kw);
+  }
 
   if (category) {
     sql += " AND st.category_id = ?";
@@ -973,6 +987,27 @@ export async function fetchActiveGiversWithServices(filters = {}) {
     throw new Error("Database query failed.");
   }
 }
+// 🧩 Fetch all portfolio items for a given giver
+export async function fetchGiverPortfolio(giverId) {
+  const sql = `
+    SELECT portfolio_id, title, description, media_url, media_type, uploaded_at
+    FROM giver_portfolio
+    WHERE giver_id = ?
+    ORDER BY uploaded_at DESC;
+  `;
+  return await executeSql(sql, [giverId]);
+}
+
+// 🧩 Add a new portfolio item (image/video)
+export async function addGiverPortfolioItem(giverId, title, description, mediaUrl, mediaType = 'image') {
+  const sql = `
+    INSERT INTO giver_portfolio (giver_id, title, description, media_url, media_type)
+    VALUES (?, ?, ?, ?, ?);
+  `;
+  const result = await executeSql(sql, [giverId, title, description, mediaUrl, mediaType]);
+  return { id: result.insertId, giverId, title, description, mediaUrl, mediaType };
+}
+
 
 
 

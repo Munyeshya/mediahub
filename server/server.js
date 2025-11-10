@@ -472,6 +472,7 @@ app.get("/api/givers", async (req, res) => {
       verifiedOnly: req.query.verifiedOnly === "true",
       minPrice: req.query.minPrice ? Number(req.query.minPrice) : null,
       maxPrice: req.query.maxPrice ? Number(req.query.maxPrice) : null,
+      keyword: req.query.keyword || null,
     };
 
     const data = await db.fetchActiveGiversWithServices(filters);
@@ -481,6 +482,38 @@ app.get("/api/givers", async (req, res) => {
     res.status(500).json({ message: "Failed to load service providers." });
   }
 });
+
+// GET portfolio for a specific giver
+app.get("/api/giver/:giverId/portfolio", async (req, res) => {
+  try {
+    const giverId = req.params.giverId;
+    const items = await db.fetchGiverPortfolio(giverId);
+    res.status(200).json(items);
+  } catch (error) {
+    console.error("Error fetching portfolio:", error);
+    res.status(500).json({ message: "Failed to fetch portfolio items." });
+  }
+});
+
+// POST new portfolio item (later for upload)
+app.post("/api/giver/:giverId/portfolio", async (req, res) => {
+  try {
+    const { title, description, media_url, media_type } = req.body;
+    const giverId = req.params.giverId;
+    const newItem = await db.addGiverPortfolioItem(
+      giverId,
+      title,
+      description,
+      media_url,
+      media_type
+    );
+    res.status(201).json(newItem);
+  } catch (error) {
+    console.error("Error adding portfolio item:", error);
+    res.status(500).json({ message: "Failed to add portfolio item." });
+  }
+});
+
 
 
 
