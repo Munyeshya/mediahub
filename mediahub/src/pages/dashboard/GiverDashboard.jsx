@@ -7,6 +7,8 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { useAuth } from "@/logic/auth";
 import { Button } from "@/components/ui/button";
+import { GiverServices } from "./GiverServices";
+
 
 // ✅ ---- Giver Home Page ----
 function GiverHome() {
@@ -206,7 +208,7 @@ export function GiverDashboard() {
         element={<GiverDashboardLayout title="Creative Dashboard" />}
       >
         <Route index element={<GiverHome />} />
-        {/* Future: <Route path="services" element={<MyServices />} /> */}
+        <Route path="services" element={<GiverServices />} />
       </Route>
     </Routes>
   );

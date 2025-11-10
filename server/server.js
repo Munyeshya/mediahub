@@ -414,6 +414,31 @@ app.get("/api/giver/:id/dashboard", async (req, res) => {
   }
 });
 
+// Fetch giver’s services
+app.get("/api/giver/:id/services", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const services = await db.fetchGiverServices(id);
+    res.status(200).json(services);
+  } catch (err) {
+    console.error("Error fetching giver services:", err);
+    res.status(500).json({ message: "Failed to load giver services." });
+  }
+});
+
+// Update service price
+app.put("/api/giver/:id/services/:serviceId", async (req, res) => {
+  const { id, serviceId } = req.params;
+  const { price_RWF } = req.body;
+  try {
+    await db.updateGiverServicePrice(id, serviceId, price_RWF);
+    res.status(200).json({ message: "Price updated successfully." });
+  } catch (err) {
+    console.error("Error updating giver price:", err);
+    res.status(500).json({ message: "Failed to update service price." });
+  }
+});
+
 
 
 

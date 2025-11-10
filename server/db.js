@@ -854,3 +854,26 @@ export async function fetchGiverDashboard(giverId) {
   return { profile, stats, recentBookings };
 }
 
+export async function fetchGiverServices(giverId) {
+  return await executeSql(
+    `SELECT 
+        st.service_id,
+        st.service_name,
+        st.base_unit,
+        gsp.price_RWF
+     FROM giver_service_price gsp
+     JOIN service_type st ON gsp.service_id = st.service_id
+     WHERE gsp.giver_id = ?`,
+    [giverId]
+  );
+}
+
+export async function updateGiverServicePrice(giverId, serviceId, price) {
+  return await executeSql(
+    `UPDATE giver_service_price 
+     SET price_RWF = ? 
+     WHERE giver_id = ? AND service_id = ?`,
+    [price, giverId, serviceId]
+  );
+}
+
