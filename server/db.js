@@ -816,3 +816,41 @@ export async function updateReview(reviewId, rating, comment) {
   const rows = await executeSql(fetchSql, [reviewId]);
   return rows.length > 0 ? rows[0] : null;
 }
+
+export async function fetchGiverDashboard(giverId) {
+  const [profile] = await executeSql(
+    "SELECT name, email, is_verified, created_at, (SELECT avg_rating FROM profile WHERE giver_id = ?) AS avg_rating FROM service_giver WHERE giver_id = ?",
+    [giverId, giverId]
+  );
+
+  const [stats] = await executeSql(
+    `SELECT 
+      COUNT(DISTINCT gsp.service_id) AS active_services,
+      COUNT(DISTINCT b.client_id) AS total_clients,
+      COALESCE(SUM(b.total_price_RWF), 0) AS total_earnings
+    FROM service_giver sg
+    LEFT JOIN booking b ON sg.giver_id = b.giver_id
+    LEFT JOIN giver_service_price gsp ON sg.giver_id = gsp.giver_id
+    WHERE sg.giver_id = ?`,
+    [giverId]
+  );
+
+  const recentBookings = await executeSql(
+    `SELECT 
+      b.booking_id,
+      c.full_name AS client_name,
+      st.service_name,
+      b.status,
+      b.total_price_RWF
+    FROM booking b
+    JOIN client c ON b.client_id = c.client_id
+    JOIN service_type st ON b.service_id = st.service_id
+    WHERE b.giver_id = ?
+    ORDER BY b.created_at DESC
+    LIMIT 6`,
+    [giverId]
+  );
+
+  return { profile, stats, recentBookings };
+}
+

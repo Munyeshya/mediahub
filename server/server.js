@@ -402,6 +402,19 @@ app.put("/api/reviews/:id", async (req, res) => {
   }
 });
 
+app.get("/api/giver/:id/dashboard", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const dashboard = await db.fetchGiverDashboard(id);
+    if (!dashboard) return res.status(404).json({ message: "Giver not found" });
+    res.status(200).json(dashboard);
+  } catch (error) {
+    console.error("Error loading giver dashboard:", error);
+    res.status(500).json({ message: "Failed to load giver dashboard." });
+  }
+});
+
+
 
 
 
