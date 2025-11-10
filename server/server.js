@@ -364,6 +364,44 @@ app.get('/api/bookings/:id/review', async (req, res) => {
   }
 });
 
+// ✅ Fetch a review for a booking
+app.get("/api/bookings/:id/review", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const review = await db.fetchReviewByBooking(id);
+    if (!review) return res.status(204).send(); // no content if none exists
+    res.status(200).json(review);
+  } catch (error) {
+    console.error("Error fetching review:", error);
+    res.status(500).json({ message: "Failed to fetch review." });
+  }
+});
+
+// ✅ Create a new review
+app.post("/api/reviews", async (req, res) => {
+  const { booking_id, giver_id, client_id, rating, comment } = req.body;
+  try {
+    const newReview = await db.addReview({ booking_id, giver_id, client_id, rating, comment });
+    res.status(201).json(newReview);
+  } catch (error) {
+    console.error("Error adding review:", error);
+    res.status(500).json({ message: "Failed to add review." });
+  }
+});
+
+// ✅ Update existing review
+app.put("/api/reviews/:id", async (req, res) => {
+  const { id } = req.params;
+  const { rating, comment } = req.body;
+  try {
+    const updated = await db.updateReview(id, rating, comment);
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error("Error updating review:", error);
+    res.status(500).json({ message: "Failed to update review." });
+  }
+});
+
 
 
 

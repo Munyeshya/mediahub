@@ -793,3 +793,26 @@ export async function fetchReviewByBooking(bookingId) {
   const rows = await executeSql(sql, [bookingId]);
   return rows.length > 0 ? rows[0] : null;
 }
+
+// ✅ Add a new review
+export async function addReview({ booking_id, giver_id, client_id, rating, comment }) {
+  const sql = `
+    INSERT INTO review (booking_id, giver_id, client_id, rating, comment, created_at)
+    VALUES (?, ?, ?, ?, ?, NOW());
+  `;
+  const result = await executeSql(sql, [booking_id, giver_id, client_id, rating, comment]);
+  return { review_id: result.insertId, booking_id, giver_id, client_id, rating, comment };
+}
+
+// ✅ Update an existing review
+export async function updateReview(reviewId, rating, comment) {
+  const sql = `
+    UPDATE review
+    SET rating = ?, comment = ?, created_at = NOW()
+    WHERE review_id = ?;
+  `;
+  await executeSql(sql, [rating, comment, reviewId]);
+  const fetchSql = `SELECT * FROM review WHERE review_id = ?;`;
+  const rows = await executeSql(fetchSql, [reviewId]);
+  return rows.length > 0 ? rows[0] : null;
+}
