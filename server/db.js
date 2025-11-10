@@ -427,3 +427,64 @@ export async function fetchUsageData(months = 12) {
     }
 }
 
+// --- SERVICES DATABASE FUNCTIONS ---
+
+export async function fetchServices() {
+  const sql = `
+      SELECT 
+        st.service_id AS id,
+        st.service_name AS name,
+        CONCAT('Category: ', sc.category_name) AS description,
+        CASE WHEN st.base_unit IS NOT NULL THEN 1 ELSE 0 END AS active
+      FROM service_type st
+      LEFT JOIN service_category sc ON st.category_id = sc.category_id
+      ORDER BY st.service_id DESC;
+  `;
+  try {
+    return await executeSql(sql);
+  } catch (error) {
+    console.error("[DB Query Error] fetchServices:", error);
+    throw new Error("Database query failed.");
+  }
+}
+
+export async function addService({ name, description, active }) {
+  const sql = `
+      INSERT INTO service_type (category_id, service_name, base_unit)
+      VALUES (1, ?, ?);
+  `;
+  try {
+    const result = await executeSql(sql, [name, active ? "Project" : "Hour"]);
+    return { id: result.insertId, name, description, active };
+  } catch (error) {
+    console.error("[DB Query Error] addService:", error);
+    throw new Error("Failed to add service.");
+  }
+}
+
+export async function updateService(id, { name, description, active }) {
+  const sql = `
+      UPDATE service_type 
+      SET service_name = ?, base_unit = ?
+      WHERE service_id = ?;
+  `;
+  try {
+    await executeSql(sql, [name, active ? "Project" : "Hour", id]);
+    return { id, name, description, active };
+  } catch (error) {
+    console.error("[DB Query Error] updateService:", error);
+    throw new Error("Failed to update service.");
+  }
+}
+
+export async function deleteService(id) {
+  const sql = `DELETE FROM service_type WHERE service_id = ?;`;
+  try {
+    await executeSql(sql, [id]);
+    return true;
+  } catch (error) {
+    console.error("[DB Query Error] deleteService:", error);
+    throw new Error("Failed to delete service.");
+  }
+}
+

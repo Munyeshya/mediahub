@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as db from './db.js'; // Import your DB functions
+import { fetchServices, addService, updateService, deleteService } from "./db.js";
 
 // --- FIX: create the Express app before using app.use(...) ---
 const app = express();
@@ -186,3 +187,52 @@ app.put("/api/admin/givers/:id/status", async (req, res) => {
         res.status(500).json({ message: "Failed to update giver status." });
     }
 });
+
+// --- SERVICES MANAGEMENT ROUTES ---
+
+
+
+// Fetch all services
+app.get("/api/admin/services", async (req, res) => {
+  try {
+    const services = await fetchServices();
+    res.status(200).json(services);
+  } catch (error) {
+    console.error("Error fetching services:", error);
+    res.status(500).json({ message: "Failed to fetch service list." });
+  }
+});
+
+// Add a new service
+app.post("/api/admin/services", async (req, res) => {
+  try {
+    const newService = await addService(req.body);
+    res.status(201).json(newService);
+  } catch (error) {
+    console.error("Error adding service:", error);
+    res.status(500).json({ message: "Failed to add service." });
+  }
+});
+
+// Update service
+app.put("/api/admin/services/:id", async (req, res) => {
+  try {
+    const updated = await updateService(req.params.id, req.body);
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error("Error updating service:", error);
+    res.status(500).json({ message: "Failed to update service." });
+  }
+});
+
+// Delete service
+app.delete("/api/admin/services/:id", async (req, res) => {
+  try {
+    const deleted = await deleteService(req.params.id);
+    res.status(200).json({ success: deleted });
+  } catch (error) {
+    console.error("Error deleting service:", error);
+    res.status(500).json({ message: "Failed to delete service." });
+  }
+});
+

@@ -1,59 +1,70 @@
-// src/pages/dashboard/ManageServices.jsx
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from '@/components/ui/input';
-import { Plus, Edit, Trash2, RotateCw } from 'lucide-react'; 
-
+import { Plus, Edit, Trash2, RotateCw } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Label } from '@/components/ui/label';
 
-// Assuming you add these functions to your db.js (Mocked for now)
-const mockFetchServices = async () => {
-    await new Promise(resolve => setTimeout(resolve, 500)); 
-    return [
-        { id: 1, name: "Videographer", description: "All forms of video production, editing, and cinematography.", active: true },
-        { id: 2, name: "Photographer", description: "Studio and event photography, retouching, and drone stills.", active: true },
-        { id: 3, name: "Music Producer", description: "Beat making, mixing, and mastering for all genres.", active: true },
-        { id: 4, name: "Graphic Designer", description: "Logo design, branding, and digital asset creation.", active: false },
-    ];
-};
+/* -----------------------------------------------------------------
+   💥 NEW: Real API calls to backend /api/admin/services endpoints
+------------------------------------------------------------------- */
 
-const mockUpdateService = async (service) => {
-    await new Promise(resolve => setTimeout(resolve, 500)); 
-    return service; 
-};
+const API_BASE = "http://localhost:3001/api/admin";
 
-const mockAddService = async (newService) => {
-    await new Promise(resolve => setTimeout(resolve, 500)); 
-    return { ...newService, id: Math.floor(Math.random() * 1000) + 100 }; 
-};
+async function fetchServices() {
+    const res = await fetch(`${API_BASE}/services`);
+    if (!res.ok) throw new Error(`Server responded ${res.status}`);
+    return await res.json();
+}
 
-// 💥 IMPORTANT: This is the actual function you'd replace with your db.js call
-const mockDeleteService = async (id) => {
-    await new Promise(resolve => setTimeout(resolve, 500)); 
-    return true;
-};
+async function addService(service) {
+    const res = await fetch(`${API_BASE}/services`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(service),
+    });
+    if (!res.ok) throw new Error(`Add failed: ${res.status}`);
+    return await res.json();
+}
 
+async function updateService(id, service) {
+    const res = await fetch(`${API_BASE}/services/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(service),
+    });
+    if (!res.ok) throw new Error(`Update failed: ${res.status}`);
+    return await res.json();
+}
+
+async function deleteService(id) {
+    const res = await fetch(`${API_BASE}/services/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+    return await res.json();
+}
+
+/* -----------------------------------------------------------------
+   COMPONENT
+------------------------------------------------------------------- */
 
 export function ManageServices() {
     const [services, setServices] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    
-    // State for the Add/Edit Modal
+
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentService, setCurrentService] = useState(null); // Null for Add, object for Edit
+    const [currentService, setCurrentService] = useState(null);
     const [serviceForm, setServiceForm] = useState({ name: '', description: '', active: true });
 
-    // --- Data Fetching (remains the same) ---
+    // --- Fetch services ---
     const loadServices = async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const data = await mockFetchServices(); // Replace with fetchServices
+            const data = await fetchServices();
             setServices(data);
         } catch (err) {
             setError(err.message);
@@ -63,97 +74,55 @@ export function ManageServices() {
         }
     };
 
-    useEffect(() => {
-        loadServices();
-    }, []);
+    useEffect(() => { loadServices(); }, []);
 
-    // --- Handlers (handleOpenModal and handleSaveService remain the same) ---
+    // --- Modal controls ---
     const handleOpenModal = (service = null) => {
         setCurrentService(service);
-        if (service) {
-            setServiceForm({ name: service.name, description: service.description, active: service.active });
-        } else {
-            setServiceForm({ name: '', description: '', active: true });
-        }
+        setServiceForm(service ? { 
+            name: service.name, 
+            description: service.description, 
+            active: !!service.active 
+        } : { name: '', description: '', active: true });
         setIsModalOpen(true);
     };
 
+    // --- Save (Add or Edit) ---
     const handleSaveService = async (e) => {
         e.preventDefault();
-        
         if (!serviceForm.name || !serviceForm.description) {
             toast.error("Name and description are required.", { theme: "dark" });
             return;
         }
-
         try {
             let result;
             if (currentService) {
-                // EDIT
-                result = await mockUpdateService({ ...currentService, ...serviceForm }); 
+                result = await updateService(currentService.id, serviceForm);
                 setServices(services.map(s => s.id === result.id ? result : s));
                 toast.success(`Service '${result.name}' updated successfully.`, { theme: "dark" });
             } else {
-                // ADD
-                result = await mockAddService(serviceForm); 
+                result = await addService(serviceForm);
                 setServices([...services, result]);
                 toast.success(`New service '${result.name}' added successfully.`, { theme: "dark" });
             }
-            
             setIsModalOpen(false);
         } catch (err) {
             toast.error(`Failed to save service: ${err.message}`, { theme: "dark" });
         }
     };
 
-    // 💥 UPDATED: DELETE HANDLER with Toast Confirmation
-    const handleDelete = (id, name) => {
-        const confirmAndExecuteDelete = async () => {
-            try {
-                // 1. Execute the delete operation (Replace with deleteService(id))
-                await mockDeleteService(id); 
-                
-                // 2. Update local state
-                setServices(services.filter(s => s.id !== id));
-                
-                // 3. Success notification
-                toast.success(`Service '${name}' has been permanently deleted.`, { theme: "dark" });
-            } catch (err) {
-                toast.error(`Failed to delete service: ${err.message}`, { theme: "dark" });
-            }
-        };
-
-        // Show the Warning Toast with a confirm button
-        toast.warn(
-            <div className="flex flex-col items-start">
-                <p className="font-bold text-lg mb-2">Confirm Deletion</p>
-                <p className="mb-3">Are you sure you want remove this service?</p>
-                <Button 
-                    size="sm"
-                    variant="destructive"
-                    // Manually close the toast and execute the delete
-                    onClick={() => {
-                        toast.dismiss(); 
-                        confirmAndExecuteDelete();
-                    }}
-                    className="mt-2"
-                >
-                    Yes, Delete Permanently
-                </Button>
-            </div>, 
-            {
-                position: "top-center",
-                autoClose: false, // Keep the toast open until the user confirms or dismisses
-                closeOnClick: false,
-                draggable: false,
-                theme: "dark",
-                icon: <Trash2 className="h-6 w-6 text-red-400" />,
-            }
-        );
+    // --- Delete handler ---
+    const handleDelete = async (id, name) => {
+        try {
+            await deleteService(id);
+            setServices(services.filter(s => s.id !== id));
+            toast.success(`Service '${name}' deleted successfully.`, { theme: "dark" });
+        } catch (err) {
+            toast.error(`Failed to delete service: ${err.message}`, { theme: "dark" });
+        }
     };
 
-
-    // --- Render Logic (remains the same) ---
+    // --- Render Table ---
     const renderContent = () => {
         if (isLoading) {
             return (
@@ -239,7 +208,7 @@ export function ManageServices() {
                 </CardContent>
             </Card>
 
-            {/* ADD/EDIT SERVICE DIALOG/MODAL (Remains the same) */}
+            {/* Add/Edit Modal */}
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogContent className="bg-gray-800 border-gray-700 text-white sm:max-w-[425px]">
                     <DialogHeader>
@@ -249,7 +218,6 @@ export function ManageServices() {
                     </DialogHeader>
                     
                     <form onSubmit={handleSaveService} className="grid gap-4 py-4">
-                        {/* Form fields... (remain the same) */}
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="name" className="text-right">Name</Label>
                             <Input 
