@@ -915,6 +915,65 @@ export async function fetchGiverEarnings(giverId) {
   );
 }
 
+export async function fetchActiveGiversWithServices(filters = {}) {
+  const { category, minRating, verifiedOnly, minPrice, maxPrice } = filters;
+
+  let sql = `
+    SELECT 
+      sg.giver_id,
+      ANY_VALUE(sg.name) AS giver_name,
+      ANY_VALUE(sg.email) AS email,
+      ANY_VALUE(sg.is_verified) AS is_verified,
+      ANY_VALUE(p.city) AS city,
+      ANY_VALUE(p.bio) AS bio,
+      ANY_VALUE(p.avg_rating) AS avg_rating,
+      ANY_VALUE(p.hourly_rate_RWF) AS hourly_rate_RWF,
+      ANY_VALUE(st.service_name) AS service_name,
+      ANY_VALUE(gsp.price_RWF) AS price_RWF,
+      COUNT(b.booking_id) AS total_bookings
+    FROM service_giver sg
+    LEFT JOIN profile p ON sg.giver_id = p.giver_id
+    LEFT JOIN giver_service_price gsp ON sg.giver_id = gsp.giver_id
+    LEFT JOIN service_type st ON gsp.service_id = st.service_id
+    LEFT JOIN booking b ON sg.giver_id = b.giver_id
+    WHERE 1=1
+  `;
+
+  const params = [];
+
+  if (category) {
+    sql += " AND st.category_id = ?";
+    params.push(category);
+  }
+
+  if (minRating) {
+    sql += " AND COALESCE(p.avg_rating, 0) >= ?";
+    params.push(minRating);
+  }
+
+  if (verifiedOnly) {
+    sql += " AND sg.is_verified = 1";
+  }
+
+  if (minPrice && maxPrice) {
+    sql += " AND COALESCE(gsp.price_RWF, 0) BETWEEN ? AND ?";
+    params.push(minPrice, maxPrice);
+  }
+
+  sql += `
+    GROUP BY sg.giver_id
+    ORDER BY ANY_VALUE(p.avg_rating) DESC;
+  `;
+
+  try {
+    const rows = await executeSql(sql, params);
+    return rows;
+  } catch (err) {
+    console.error("[DB ERROR - fetchActiveGiversWithServices]", err.message);
+    throw new Error("Database query failed.");
+  }
+}
+
 
 
 

@@ -464,6 +464,26 @@ app.get("/api/giver/:id/earnings", async (req, res) => {
   }
 });
 
+app.get("/api/givers", async (req, res) => {
+  try {
+    const filters = {
+      category: req.query.category || null,
+      minRating: req.query.minRating ? Number(req.query.minRating) : null,
+      verifiedOnly: req.query.verifiedOnly === "true",
+      minPrice: req.query.minPrice ? Number(req.query.minPrice) : null,
+      maxPrice: req.query.maxPrice ? Number(req.query.maxPrice) : null,
+    };
+
+    const data = await db.fetchActiveGiversWithServices(filters);
+    res.status(200).json(data);
+  } catch (err) {
+    console.error("Error fetching givers:", err);
+    res.status(500).json({ message: "Failed to load service providers." });
+  }
+});
+
+
+
 
 
 

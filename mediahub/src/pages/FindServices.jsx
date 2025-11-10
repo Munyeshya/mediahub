@@ -1,280 +1,210 @@
-// src/pages/FindServices.jsx
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Star, Filter, Search, User, CheckCircle, ArrowLeft, ArrowRight, Tag } from "lucide-react"; // <-- Added Tag icon
-import { FramerParticleBackground } from '../components/common/FramerParticleBackground';
-
-// --- Mock Data ---
-const CATEGORIES = ['Photography', 'Videography', 'Audio Production', 'Graphics & Design', 'Web Development'];
-const PRICE_LEVELS = ['$', '$$', '$$$'];
-
-// Generates 16 mock creatives (to better test the 4-per-row layout)
-const MOCK_CREATIVES = Array.from({ length: 16 }, (_, i) => ({
-    id: i + 1,
-    name: `Creative Studio ${i + 1}`,
-    category: CATEGORIES[i % CATEGORIES.length],
-    rating: (4.0 + (i % 10) * 0.1).toFixed(1),
-    priceLevel: PRICE_LEVELS[i % PRICE_LEVELS.length],
-    bookings: (10 + i * 5) + '+',
-    isVerified: i % 3 === 0,
-    // 💥 UPGRADE: Added mock skill tags for demonstration
-    skills: ['Figma', 'Premiere Pro', 'Drone Ops', 'SEO', 'Mobile', 'Events'].sort(() => 0.5 - Math.random()).slice(0, 3) 
-}));
-
-// --- 1. Filter Components (Left Sidebar) ---
-
-function FiltersPanel() {
-    return (
-        // Sticky top-20 keeps the filter panel visible as the user scrolls the results
-        <div className="p-4 bg-gray-800 rounded-xl shadow-xl border border-gray-700 sticky top-20 ">
-            
-            <h2 className="text-2xl font-bold text-amber-500 mb-6 flex items-center">
-                <Filter className="h-6 w-6 mr-2" /> Filters
-            </h2>
-
-            {/* Keyword Search */}
-            <div className="mb-6 pb-4 border-b border-gray-700">
-                <Label htmlFor="search" className="text-white mb-2 block font-semibold">Keyword Search</Label>
-                <div className="relative">
-                    <Input id="search" placeholder="E.g. 'Wedding Photographer'" className="pl-10 bg-gray-900 border-gray-600 text-white" />
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                </div>
-            </div>
-
-            {/* Categories Filter */}
-            <div className="mb-6 pb-4 border-b border-gray-700">
-                <h3 className="text-lg font-semibold text-white mb-3">Service Category</h3>
-                <div className="space-y-2">
-                    {CATEGORIES.map((category) => (
-                        <div key={category} className="flex items-center space-x-2">
-                            <Checkbox id={`cat-${category}`} className="border-amber-500 data-[state=checked]:bg-amber-500" />
-                            <Label htmlFor={`cat-${category}`} className="text-gray-300">{category}</Label>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Min Rating Filter */}
-            <div className="mb-6 pb-4 border-b border-gray-700">
-                <h3 className="text-lg font-semibold text-white mb-3">Min Rating</h3>
-                <div className="space-y-2">
-                    {[5.0, 4.5, 4.0, 3.5].map((minRating) => (
-                        <div key={minRating} className="flex items-center space-x-2">
-                            <Checkbox id={`rating-${minRating}`} className="border-amber-500 data-[state=checked]:bg-amber-500" />
-                            <Label htmlFor={`rating-${minRating}`} className="text-gray-300 flex items-center">
-                                <Star className="h-4 w-4 fill-amber-500 text-amber-500 mr-1" />
-                                {minRating} & Up
-                            </Label>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Price Range */}
-            <div className="mb-6 pb-4 border-b border-gray-700">
-                <h3 className="text-lg font-semibold text-white mb-4">Hourly Rate (RWF)</h3>
-                <Slider 
-                    defaultValue={[10000, 50000]} 
-                    max={100000} 
-                    step={1000} 
-                    className="w-full"
-                />
-                <div className="flex justify-between text-sm text-gray-400 mt-2">
-                    <span>RWF 10,000</span>
-                    <span>RWF 100,000+</span>
-                </div>
-            </div>
-
-            {/* Verification Status */}
-            <div className="mb-6">
-                <h3 className="text-lg font-semibold text-white mb-3">Verification</h3>
-                <div className="flex items-center space-x-2">
-                    <Checkbox id="verified" className="border-amber-500 data-[state=checked]:bg-amber-500" />
-                    <Label htmlFor="verified" className="text-gray-300">MediaHub Verified Only</Label>
-                </div>
-            </div>
-
-            <Button className="w-full bg-amber-500 text-gray-900 hover:bg-amber-400 font-bold">Apply Filters</Button>
-            <Button variant="ghost" className="w-full mt-2 text-gray-400 hover:text-white">Clear Filters</Button>
-        </div>
-    );
-}
-
-// --- 2. Service Card Component (ULTRA COMPACT FINAL DESIGN) ---
-
-function ServiceCard({ creative }) {
-    // Determine how many tags to show and if an overflow count is needed
-    const visibleSkills = creative.skills.slice(0, 2); // Show first 2 tags
-    const overflowCount = creative.skills.length - visibleSkills.length;
-
-    return (
-        <Card 
-            className="bg-gray-800 rounded-xl border border-gray-700 hover:border-amber-500/50 
-                       transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/20 h-full flex flex-col"
-        >
-            {/* Header/Logo (Compact) */}
-            <CardHeader className="p-3 flex flex-row items-center justify-between border-b border-gray-700">
-                <div className="flex items-center space-x-2">
-                    {/* Icon kept small */}
-                    <div className="h-8 w-8 rounded-full bg-gray-700 border border-amber-500 flex items-center justify-center flex-shrink-0">
-                        <User className="h-4 w-4 text-amber-500" />
-                    </div>
-                    <div>
-                        {/* Name: text-sm */}
-                        <CardTitle className="text-sm font-bold text-white leading-tight">
-                            {creative.name}
-                        </CardTitle>
-                        {/* Category: text-xs */}
-                        <p className="text-xs text-gray-400">{creative.category}</p>
-                    </div>
-                </div>
-                {creative.isVerified && (
-                    <CheckCircle className="h-4 w-4 text-green-500" title="MediaHub Verified" />
-                )}
-            </CardHeader>
-
-            {/* Content (Ultra-Compact) */}
-            <CardContent className="p-3 flex-grow flex flex-col justify-between">
-                
-                {/* Rating & Price */}
-                <div className="flex justify-between items-center mb-3">
-                    {/* Rating Section (Compact) */}
-                    <div className="flex items-center space-x-1">
-                        <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
-                        <span className="text-sm font-semibold text-amber-400">{creative.rating}</span>
-                        <span className="text-xs text-gray-500">({creative.bookings} done)</span>
-                    </div>
-                    
-                    {/* Price Level (Compact) */}
-                    <p className="text-sm font-bold text-white">
-                        {creative.priceLevel}
-                    </p>
-                </div>
-
-                {/* 💥 UPGRADE: Skill Tags Section */}
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                    {visibleSkills.map(skill => (
-                        <span key={skill} className="text-xs font-medium bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20 flex items-center">
-                            <Tag className="h-3 w-3 mr-1" />{skill}
-                        </span>
-                    ))}
-                    {/* Overflow Tag */}
-                    {overflowCount > 0 && (
-                        <span className="text-xs font-medium bg-gray-700 text-gray-400 px-2 py-0.5 rounded-full border border-gray-600">
-                            +{overflowCount} more
-                        </span>
-                    )}
-                </div>
-                {/*  (Illustrates the compact tag design) */}
-
-                {/* Button: Icon only, smaller size */}
-                <Button 
-                    className="w-full bg-amber-500 text-gray-900 hover:bg-amber-400 font-bold mt-auto h-8 text-sm p-0 flex justify-center items-center"
-                    aria-label="View Profile" 
-                >
-                    <ArrowRight className="h-4 w-4" /> 
-                </Button>
-            </CardContent>
-        </Card>
-    );
-}
-
-// --- 3. Pagination Component (Unchanged) ---
-// ... (PaginationControls component remains the same) ...
-function PaginationControls({ currentPage, totalPages, onPageChange }) {
-    return (
-        <div className="flex justify-between items-center mt-10 ">
-            <Button 
-                variant="outline" 
-                className="text-amber-500 border-amber-500 hover:bg-amber-900/20 disabled:opacity-50"
-                disabled={currentPage === 1}
-            >
-                <ArrowLeft className="h-4 w-4 mr-2" /> Previous
-            </Button>
-            
-            <div className="text-gray-400">
-                Page <span className="text-white font-bold">{currentPage}</span> of <span className="text-white font-bold">{totalPages}</span>
-            </div>
-            
-            <Button 
-                className="bg-amber-500 text-gray-900 hover:bg-amber-400 disabled:opacity-50"
-                disabled={currentPage === totalPages}
-            >
-                Next <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-        </div>
-    );
-}
-
-
-// --- 4. Main FindServices Page Component (Unchanged) ---
+import { Star, Filter, Search, User, CheckCircle, Tag, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "react-toastify";
+import { FramerParticleBackground } from "../components/common/FramerParticleBackground";
 
 export function FindServices() {
-    // Mock state for results and pagination
-    const totalCreatives = 76; // Hypothetical total
-    const resultsPerPage = 16;
-    const totalPages = Math.ceil(totalCreatives / resultsPerPage);
-    const currentPage = 1; // Start on page 1
+  const [creatives, setCreatives] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    category: null,
+    minRating: 0,
+    verifiedOnly: false,
+    minPrice: 0,
+    maxPrice: 100000,
+  });
+  const [selectedGiver, setSelectedGiver] = useState(null);
 
-    return (
-        <div className="bg-gray-900 text-white min-h-screen relative">
-        <FramerParticleBackground />
-            <div className="mx-auto max-w-7xl px-8 py-12 md:py-16">
-                
-                <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-12 border-b-2 border-amber-500/50 pb-4">
-                    Find the Perfect <span className="text-amber-500">Creative Service</span>
-                </h1>
+  // 🔹 Fetch data with filters
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const query = new URLSearchParams(
+          Object.fromEntries(
+            Object.entries(filters).filter(([_, v]) => v !== null && v !== "")
+          )
+        ).toString();
 
-                <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-10">
-                    
-                    {/* Left Column: Filters */}
-                    <aside>
-                        <FiltersPanel />
-                    </aside>
-                    
-                    {/* Right Column: Results */}
-                    <main>
-                        
-                        {/* Results Summary and Sorting */}
-                        <div className="flex justify-between items-center mb-6 pb-2 border-b border-gray-700">
-                            <h2 className="text-xl font-semibold text-gray-300">
-                                Showing {resultsPerPage} of {totalCreatives} results
-                            </h2>
-                            <div className="flex items-center space-x-2">
-                                <Label htmlFor="sort" className="text-gray-400">Sort by:</Label>
-                                <select 
-                                    id="sort" 
-                                    className="bg-gray-800 border border-gray-600 text-white rounded-md p-2 text-sm"
-                                >
-                                    <option>Best Match</option>
-                                    <option>Highest Rated</option>
-                                    <option>Most Booked</option>
-                                    <option>Price: Low to High</option>
-                                </select>
-                            </div>
-                        </div>
+        const res = await fetch(`http://localhost:3001/api/givers?${query}`);
+        if (!res.ok) throw new Error("Failed to fetch creatives.");
+        const json = await res.json();
+        setCreatives(json);
+      } catch (err) {
+        toast.error(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [filters]);
 
-                        {/* Service Results Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {MOCK_CREATIVES.map((creative) => (
-                                <ServiceCard key={creative.id} creative={creative} />
-                            ))}
-                        </div>
+  return (
+    <div className="bg-gray-900 text-white min-h-screen relative">
+      <FramerParticleBackground />
+      <div className="mx-auto max-w-7xl px-8 py-12 md:py-16">
+        <h1 className="text-4xl font-extrabold text-white mb-12 border-b-2 border-amber-500/50 pb-4">
+          Find the Perfect <span className="text-amber-500">Creative</span>
+        </h1>
 
-                        {/* Pagination */}
-                        <PaginationControls 
-                            currentPage={currentPage} 
-                            totalPages={totalPages} 
-                            onPageChange={() => console.log('Page change functionality would go here')}
-                        />
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-10">
+          {/* --- FILTER PANEL --- */}
+          <aside className="p-4 bg-gray-800 rounded-xl border border-gray-700 sticky top-20">
+            <h2 className="text-2xl font-bold text-amber-500 mb-6 flex items-center">
+              <Filter className="h-6 w-6 mr-2" /> Filters
+            </h2>
 
-                    </main>
-                </div>
+            <Label className="text-white mb-2 block font-semibold">Keyword</Label>
+            <Input
+              placeholder="Search by name or category..."
+              className="mb-4 bg-gray-900 border-gray-600 text-white"
+              onChange={(e) => setFilters({ ...filters, keyword: e.target.value })}
+            />
+
+            <h3 className="text-lg font-semibold text-white mb-3">Min Rating</h3>
+            {[5, 4, 3, 2].map((r) => (
+              <div key={r} className="flex items-center space-x-2 mb-2">
+                <Checkbox
+                  id={`r-${r}`}
+                  checked={filters.minRating === r}
+                  onCheckedChange={() =>
+                    setFilters({ ...filters, minRating: filters.minRating === r ? 0 : r })
+                  }
+                />
+                <Label htmlFor={`r-${r}`} className="text-gray-300 flex items-center">
+                  <Star className="h-4 w-4 fill-amber-500 text-amber-500 mr-1" /> {r}+ Stars
+                </Label>
+              </div>
+            ))}
+
+            <h3 className="text-lg font-semibold text-white mt-6 mb-2">
+              Verification
+            </h3>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="verified"
+                checked={filters.verifiedOnly}
+                onCheckedChange={(val) =>
+                  setFilters({ ...filters, verifiedOnly: val })
+                }
+              />
+              <Label htmlFor="verified" className="text-gray-300">
+                Verified Only
+              </Label>
             </div>
+
+            <h3 className="text-lg font-semibold text-white mt-6 mb-2">
+              Price Range (RWF)
+            </h3>
+            <Slider
+              defaultValue={[filters.minPrice, filters.maxPrice]}
+              min={0}
+              max={200000}
+              step={5000}
+              onValueChange={([min, max]) =>
+                setFilters({ ...filters, minPrice: min, maxPrice: max })
+              }
+            />
+            <p className="text-gray-400 text-sm mt-2">
+              {filters.minPrice.toLocaleString()} – {filters.maxPrice.toLocaleString()}
+            </p>
+          </aside>
+
+          {/* --- RESULTS --- */}
+          <main>
+            {isLoading ? (
+              <p className="text-amber-500">Loading creatives...</p>
+            ) : creatives.length === 0 ? (
+              <p className="text-gray-400">No creatives found.</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {creatives.map((c) => (
+                  <Card
+                    key={c.giver_id}
+                    className="bg-gray-800 border border-gray-700 hover:border-amber-500/50 transition-all"
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between border-b border-gray-700">
+                      <div>
+                        <CardTitle className="text-white text-sm font-bold">
+                          {c.giver_name}
+                        </CardTitle>
+                        <p className="text-xs text-gray-400">{c.service_name}</p>
+                      </div>
+                      {c.is_verified ? (
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      ) : null}
+                    </CardHeader>
+                    <CardContent className="p-3 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-1">
+                          <Star className="h-4 w-4 fill-amber-500 text-amber-500" />
+                          <span className="text-sm text-amber-400">
+                            {Number(c.avg_rating || 0).toFixed(1)}
+                          </span>
+                        </div>
+                        <span className="text-sm text-gray-300">
+                          RWF {Number(c.price_RWF).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-400 line-clamp-3">
+                        {c.bio || "No bio provided."}
+                      </p>
+                      <Button
+                        onClick={() => setSelectedGiver(c)}
+                        className="w-full bg-amber-500 text-gray-900 hover:bg-amber-400"
+                      >
+                        View Details
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </main>
         </div>
-    );
+      </div>
+
+      {/* --- MODAL --- */}
+      {selectedGiver && (
+        <Dialog open={!!selectedGiver} onOpenChange={() => setSelectedGiver(null)}>
+          <DialogContent className="bg-gray-900 border border-gray-700 text-white max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-amber-500">
+                {selectedGiver.giver_name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 mt-4">
+              <p>
+                <strong>Email:</strong> {selectedGiver.email}
+              </p>
+              <p>
+                <strong>Service:</strong> {selectedGiver.service_name}
+              </p>
+              <p>
+                <strong>Rate:</strong> RWF{" "}
+                {Number(selectedGiver.price_RWF).toLocaleString()} / hr
+              </p>
+              <p>
+                <strong>Bio:</strong> {selectedGiver.bio}
+              </p>
+              <p>
+                <strong>Rating:</strong> ⭐{" "}
+                {Number(selectedGiver.avg_rating || 0).toFixed(1)}
+              </p>
+              <Button className="w-full bg-green-500 text-gray-900 hover:bg-green-400 mt-4">
+                Book Now
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
 }
