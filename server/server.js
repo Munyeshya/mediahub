@@ -295,3 +295,75 @@ app.get("/api/client/:clientId/dashboard", async (req, res) => {
   }
 });
 
+// ✅ CLIENT BOOKINGS ENDPOINT
+app.get("/api/client/:clientId/bookings", async (req, res) => {
+  const { clientId } = req.params;
+
+  try {
+    const bookings = await db.fetchClientBookings(clientId);
+    res.json(bookings);
+  } catch (err) {
+    console.error("Error fetching client bookings:", err);
+    res.status(500).json({ message: "Failed to fetch client bookings." });
+  }
+});
+
+// ------------------------------
+// CLIENT BOOKING DETAILS ROUTE
+// ------------------------------
+app.get('/api/bookings/:id', async (req, res) => {
+  const bookingId = req.params.id;
+  try {
+    const booking = await db.fetchBookingDetails(bookingId);
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+    res.json(booking);
+  } catch (error) {
+    console.error("Booking details fetch error:", error);
+    res.status(500).json({ message: "Failed to fetch booking details." });
+  }
+});
+
+// ------------------------------
+// CLIENT REVIEW SUBMISSION ROUTE
+// ------------------------------
+app.post('/api/reviews', async (req, res) => {
+  const { booking_id, giver_id, client_id, rating, comment } = req.body;
+  try {
+    await db.submitReview(booking_id, giver_id, client_id, rating, comment);
+    res.status(201).json({ message: "Review submitted successfully!" });
+  } catch (error) {
+    console.error("Review submission error:", error);
+    res.status(500).json({ message: "Failed to submit review." });
+  }
+});
+
+app.get('/api/bookings/:id/review', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const review = await db.fetchBookingReview(id);
+    if (!review) return res.status(404).json({ message: "No review found" });
+    res.json(review);
+  } catch (error) {
+    console.error("Error fetching booking review:", error);
+    res.status(500).json({ message: "Failed to fetch booking review" });
+  }
+});
+
+
+app.get('/api/bookings/:id/review', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const review = await db.fetchReviewByBooking(id);
+    if (!review) return res.status(204).send(); // No review found
+    res.status(200).json(review);
+  } catch (error) {
+    console.error("Error fetching review:", error);
+    res.status(500).json({ message: "Failed to fetch review." });
+  }
+});
+
+
+
+

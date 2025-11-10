@@ -609,3 +609,187 @@ export async function fetchClientDashboardData(clientId) {
     throw error;
   }
 }
+
+// ============================================================
+// FETCH ALL CLIENT BOOKINGS
+// ============================================================
+export async function fetchClientBookings(clientId) {
+  try {
+    const sql = `
+      SELECT 
+        b.booking_id,
+        s.service_name,
+        sg.email AS giver_email,
+        p.amount AS payment_amount,
+        b.status,
+        b.start_date,
+        b.end_date,
+        b.total_price_RWF,
+        b.created_at
+      FROM Booking b
+      JOIN Service_Type s ON b.service_id = s.service_id
+      JOIN Service_Giver sg ON b.giver_id = sg.giver_id
+      LEFT JOIN Payment p ON b.booking_id = p.booking_id
+      WHERE b.client_id = ?
+      ORDER BY b.created_at DESC;
+    `;
+
+    const rows = await executeSql(sql, [clientId]);
+    return rows;
+  } catch (error) {
+    console.error("[DB] fetchClientBookings error:", error);
+    throw error;
+  }
+}
+
+
+// ------------------------------------------------------------------
+// FETCH BOOKING DETAILS (for client dashboard / booking details page)
+// ------------------------------------------------------------------
+export async function fetchBookingDetails(bookingId) {
+  const sql = `
+    SELECT 
+      b.booking_id,
+      b.client_id,
+      b.giver_id,
+      b.service_id,
+      b.start_date,
+      b.end_date,
+      b.status,
+      b.total_price_RWF,
+      b.created_at,
+      s.service_name,
+      sg.email AS giver_email,
+      sg.name AS giver_name,
+      c.full_name AS client_name,
+      COALESCE(p.city, 'N/A') AS city,
+      CAST(COALESCE(p.avg_rating, 0) AS DECIMAL(2,1)) AS giver_rating,
+      COALESCE(p.bio, '') AS giver_bio
+    FROM booking b
+    JOIN service_type s ON b.service_id = s.service_id
+    JOIN service_giver sg ON b.giver_id = sg.giver_id
+    JOIN client c ON b.client_id = c.client_id
+    LEFT JOIN profile p ON sg.giver_id = p.giver_id
+    WHERE b.booking_id = ?
+    LIMIT 1;
+  `;
+
+  const rows = await executeSql(sql, [bookingId]);
+  return rows.length > 0 ? rows[0] : null;
+}
+
+// ------------------------------------------------------------------
+// SUBMIT REVIEW (1 per completed booking)
+// ------------------------------------------------------------------
+export async function submitReview(booking_id, giver_id, client_id, rating, comment) {
+  // 1️⃣ Validate the booking first
+  const [booking] = await executeSql(
+    "SELECT status FROM booking WHERE booking_id = ? AND client_id = ?",
+    [booking_id, client_id]
+  );
+  if (!booking) throw new Error("Invalid booking or unauthorized client.");
+  if (booking.status !== "Completed") {
+    throw new Error("You can only review completed bookings.");
+  }
+
+  // 2️⃣ Prevent duplicate review
+  const existing = await executeSql(
+    "SELECT review_id FROM review WHERE booking_id = ? AND client_id = ?",
+    [booking_id, client_id]
+  );
+  if (existing.length > 0) {
+    throw new Error("You have already reviewed this booking.");
+  }
+
+  // 3️⃣ Insert the review
+  await executeSql(
+    `INSERT INTO review (booking_id, giver_id, client_id, rating, comment)
+     VALUES (?, ?, ?, ?, ?)`,
+    [booking_id, giver_id, client_id, rating, comment]
+  );
+
+  // 4️⃣ Update giver’s average rating in profile table
+  await executeSql(
+    `UPDATE profile
+     SET avg_rating = (
+       SELECT ROUND(AVG(r.rating), 1)
+       FROM review r
+       WHERE r.giver_id = profile.giver_id
+     )
+     WHERE giver_id = ?`,
+    [giver_id]
+  );
+}
+export async function fetchBookingReview(bookingId) {
+  const sql = `
+    SELECT 
+      r.review_id,
+      r.rating,
+      r.comment,
+      r.created_at,
+      c.full_name AS client_name
+    FROM review r
+    JOIN client c ON r.client_id = c.client_id
+    WHERE r.booking_id = ?
+    LIMIT 1;
+  `;
+  const rows = await executeSql(sql, [bookingId]);
+  return rows.length > 0 ? rows[0] : null;
+}
+
+export async function fetchBookingWithReview(bookingId) {
+  const sql = `
+    SELECT 
+      b.booking_id,
+      b.client_id,
+      b.giver_id,
+      b.service_id,
+      b.start_date,
+      b.end_date,
+      b.status,
+      b.total_price_RWF,
+      b.created_at,
+      s.service_name,
+      sg.email AS giver_email,
+      sg.name AS giver_name,
+      c.full_name AS client_name,
+      COALESCE(p.city, 'N/A') AS city,
+      CAST(COALESCE(p.avg_rating, 0) AS DECIMAL(2,1)) AS giver_rating,
+      COALESCE(p.bio, '') AS giver_bio,
+      r.review_id,
+      r.rating AS review_rating,
+      r.comment AS review_comment,
+      r.created_at AS review_date
+    FROM booking b
+    JOIN service_type s ON b.service_id = s.service_id
+    JOIN service_giver sg ON b.giver_id = sg.giver_id
+    JOIN client c ON b.client_id = c.client_id
+    LEFT JOIN profile p ON sg.giver_id = p.giver_id
+    LEFT JOIN review r ON b.booking_id = r.booking_id
+    WHERE b.booking_id = ?
+    LIMIT 1;
+  `;
+
+  const rows = await executeSql(sql, [bookingId]);
+  return rows.length > 0 ? rows[0] : null;
+}
+
+export async function fetchReviewByBooking(bookingId) {
+  const sql = `
+    SELECT 
+      r.review_id,
+      r.booking_id,
+      r.giver_id,
+      r.client_id,
+      r.rating,
+      r.comment,
+      r.created_at,
+      c.full_name AS client_name
+    FROM review r
+    JOIN client c ON r.client_id = c.client_id
+    WHERE r.booking_id = ?
+    LIMIT 1;
+  `;
+  const rows = await executeSql(sql, [bookingId]);
+  return rows.length > 0 ? rows[0] : null;
+}
