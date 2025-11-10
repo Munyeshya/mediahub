@@ -1,29 +1,29 @@
 // src/pages/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { toast } from 'react-toastify'; 
+import { toast } from 'react-toastify';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"; 
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Mail, Lock, LogIn, Chrome, MountainIcon, Users, Shield, Briefcase, Eye, EyeOff } from "lucide-react";
 import { FramerParticleBackground } from '../components/common/FramerParticleBackground';
 
 // IMPORT THE UNIFIED AUTHENTICATION FUNCTION
-import { authenticateLogin } from '@/logic/db'; 
+import { authenticateLogin } from '@/logic/db';
 
 // 💥 NEW: Import the useAuth hook to access the global login function
-import { useAuth } from '../logic/auth'; 
-    
+import { useAuth } from '../logic/auth';
+
 export function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [selectedRole, setSelectedRole] = useState('Client'); 
+    const [selectedRole, setSelectedRole] = useState('Client');
     const [showPassword, setShowPassword] = useState(false); // <<-- visibility toggle state
-    
+
     // 💥 NEW: Get the login function from the Auth Context
-    const { login } = useAuth(); 
+    const { login } = useAuth();
 
     const navigate = useNavigate();
 
@@ -48,29 +48,28 @@ export function Login() {
             result = await authenticateLogin(email, password, selectedRole);
 
             if (result) {
-                // 💥 CRITICAL FIX: Update the global authentication state
-                // This call sets the userRole in context and localStorage,
-                // which satisfies the <ProtectedRoute /> component.
-                login(result.role); 
-                
-                dashboardPath = `/dashboard/${result.role.toLowerCase()}`;
-                
-                // SUCCESS TOASTIFY CALL
+                // ✅ Save user info to context + localStorage
+                login({
+                    id: result.id,
+                    role: result.role,
+                    email
+                });
+
+                // ✅ Determine destination
+                const dashboardPath = `/dashboard/${result.role.toLowerCase()}`;
+
+                // ✅ Show success toast
                 toast.success(`Welcome back, ${result.role}! 🎉`, {
                     ...toastConfig,
-                    autoClose: 2000,
+                    autoClose: 1200,
                 });
-                
-                // Delay navigation slightly to let the toast show
-                setTimeout(() => {
-                    // Navigation will now succeed because the state is set
-                    navigate(dashboardPath, { replace: true });
-                }, 100); 
 
+                // ✅ Guaranteed navigation after toast updates
+                setTimeout(() => {
+                    navigate(dashboardPath, { replace: true });
+                }, 1200);
             } else {
                 const failureMessage = `Invalid email or password for ${selectedRole}.`;
-                
-                // FAILURE TOASTIFY CALL 
                 toast.error(failureMessage, {
                     ...toastConfig,
                     autoClose: 3000,
@@ -79,7 +78,7 @@ export function Login() {
         } catch (err) {
             console.error("Login attempt failed:", err);
             const systemErrorMessage = 'An error occurred during authentication. Please contact support.';
-            
+
             // SYSTEM ERROR TOASTIFY CALL 
             toast.error("System Error 🚨", {
                 ...toastConfig,
@@ -90,8 +89,8 @@ export function Login() {
     };
 
     return (
-        <div className="bg-gray-900 text-white relative min-h-screen flex items-center justify-center "> 
-        <FramerParticleBackground />
+        <div className="bg-gray-900 text-white relative min-h-screen flex items-center justify-center ">
+            <FramerParticleBackground />
             <Card className="w-full max-w-md bg-gray-800 border border-gray-700 shadow-2xl p-6 md:p-8">
                 <CardHeader className="text-center pb-6">
                     <Link to="/" className="flex items-center justify-center space-x-2 mb-4">
@@ -106,22 +105,22 @@ export function Login() {
                         Welcome back! Select your role to continue.
                     </p>
                 </CardHeader>
-                
+
                 <CardContent>
-                    
+
                     {/* ROLE SELECTION RADIO GROUP */}
                     <div className="mb-6 space-y-2">
                         <Label className="text-white">I am signing in as:</Label>
-                        <RadioGroup 
-                            value={selectedRole} 
-                            onValueChange={setSelectedRole} 
+                        <RadioGroup
+                            value={selectedRole}
+                            onValueChange={setSelectedRole}
                             className="flex justify-between space-x-2"
                         >
                             {/* Client Role */}
                             <div className="flex-1">
                                 <RadioGroupItem value="Client" id="client" className="sr-only" />
-                                <Label 
-                                    htmlFor="client" 
+                                <Label
+                                    htmlFor="client"
                                     className={`flex flex-col items-center justify-between rounded-md border-2 p-3 cursor-pointer transition-colors ${selectedRole === 'Client' ? 'border-amber-500 bg-amber-900/10' : 'border-gray-700 hover:bg-gray-700/50'}`}
                                 >
                                     <Users className="h-6 w-6 mb-1 text-amber-500" />
@@ -132,8 +131,8 @@ export function Login() {
                             {/* Giver Role */}
                             <div className="flex-1">
                                 <RadioGroupItem value="Giver" id="giver" className="sr-only" />
-                                <Label 
-                                    htmlFor="giver" 
+                                <Label
+                                    htmlFor="giver"
                                     className={`flex flex-col items-center justify-between rounded-md border-2 p-3 cursor-pointer transition-colors ${selectedRole === 'Giver' ? 'border-amber-500 bg-amber-900/10' : 'border-gray-700 hover:bg-gray-700/50'}`}
                                 >
                                     <Briefcase className="h-6 w-6 mb-1 text-amber-500" />
@@ -144,8 +143,8 @@ export function Login() {
                             {/* Admin Role */}
                             <div className="flex-1">
                                 <RadioGroupItem value="Admin" id="admin" className="sr-only" />
-                                <Label 
-                                    htmlFor="admin" 
+                                <Label
+                                    htmlFor="admin"
                                     className={`flex flex-col items-center justify-between rounded-md border-2 p-3 cursor-pointer transition-colors ${selectedRole === 'Admin' ? 'border-red-500 bg-red-900/10' : 'border-gray-700 hover:bg-gray-700/50'}`}
                                 >
                                     <Shield className="h-6 w-6 mb-1 text-red-500" />
@@ -155,10 +154,10 @@ export function Login() {
                         </RadioGroup>
                     </div>
 
-                    
+
                     {/* Google Sign-In and Divider */}
-                    <Button 
-                        variant="outline" 
+                    <Button
+                        variant="outline"
                         className="w-full mb-6 py-6 border-amber-500 text-amber-500 hover:bg-amber-900/20 font-semibold"
                     >
                         <Chrome className="h-5 w-5 mr-3" /> Continue with Google
@@ -172,7 +171,7 @@ export function Login() {
                             <span className="bg-gray-800 px-2 text-gray-500">Or use your email</span>
                         </div>
                     </div>
-                    
+
                     {/* 2. Email/Password Form */}
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Email Field */}
@@ -180,11 +179,11 @@ export function Login() {
                             <Label htmlFor="email">Email</Label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                                <Input 
-                                    id="email" 
-                                    type="email" 
-                                    placeholder="yourname@domain.com" 
-                                    required 
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    placeholder="yourname@domain.com"
+                                    required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className={`pl-10 bg-gray-700 border-gray-600 text-white focus:border-${selectedRole === 'Admin' ? 'red' : 'amber'}-500`}
@@ -202,11 +201,11 @@ export function Login() {
                             </div>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                                <Input 
-                                    id="password" 
+                                <Input
+                                    id="password"
                                     type={showPassword ? 'text' : 'password'} /* <-- toggled type */
-                                    placeholder="••••••••" 
-                                    required 
+                                    placeholder="••••••••"
+                                    required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     className={`pl-10 pr-12 bg-gray-700 border-gray-600 text-white focus:border-${selectedRole === 'Admin' ? 'red' : 'amber'}-500`}
@@ -225,14 +224,14 @@ export function Login() {
                         </div>
 
                         {/* Login Button */}
-                        <Button 
-                            type="submit" 
+                        <Button
+                            type="submit"
                             className={`w-full font-bold py-6 text-base transition-all duration-300 ${selectedRole === 'Admin' ? 'bg-red-500 hover:bg-red-400 text-gray-900' : 'bg-amber-500 hover:bg-amber-400 text-gray-900'}`}
                         >
                             {selectedRole === 'Admin' ? 'Access Admin Console' : 'Log In to Dashboard'}
                         </Button>
                     </form>
-                    
+
                     {/* 3. Registration Link */}
                     <p className="mt-8 text-center text-sm text-gray-400">
                         Don't have a creator account?{' '}

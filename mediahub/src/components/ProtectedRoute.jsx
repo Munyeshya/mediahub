@@ -2,30 +2,41 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../logic/auth';
+import { Loader2 } from 'lucide-react';
 
 /**
- * A wrapper component for React Router v6 to protect routes.
- * It redirects unauthorized users to the login page.
+ * A wrapper for protected routes.
+ * Ensures users are authenticated and authorized before accessing nested routes.
  *
- * @param {string} allowedRole - The required role to access the nested routes (e.g., 'Admin', 'Client').
+ * @param {string} allowedRole - The role required to access this route (e.g. 'Admin', 'Client', 'Giver')
  */
 export const ProtectedRoute = ({ allowedRole }) => {
-    const { isAuthenticated, userRole } = useAuth();
-    
-    // 1. Check if the user is authenticated at all
-    if (!isAuthenticated) {
-        // Redirect to login, replacing the history entry
-        return <Navigate to="/login" replace />; 
-    }
-    
-    // 2. Check if the authenticated user has the required role
-    if (allowedRole && userRole !== allowedRole) {
-        // You could redirect to a 403 page or their default dashboard, 
-        // but for now, we'll redirect to a generic login/home page as a fallback.
-        console.warn(`Access denied. User role '${userRole}' is not '${allowedRole}'`);
-        return <Navigate to="/" replace />; 
-    }
+  const { user, isAuthenticated } = useAuth();
 
-    // 3. If authenticated and authorized, render the nested routes
-    return <Outlet />; 
+  // 🕒 Show loader while auth state initializes (avoids flicker or premature redirect)
+  if (user === undefined) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-gray-900 text-amber-500">
+        <Loader2 className="h-6 w-6 animate-spin mr-2" /> Checking access...
+      </div>
+    );
+  }
+
+  // 🚫 Not authenticated at all → send to login
+  if (!isAuthenticated) {
+    console.warn('Access denied: not authenticated.');
+    return <Navigate to="/login" replace />;
+  }
+
+  // 🚫 Wrong role → redirect to correct dashboard
+  if (allowedRole && user?.role !== allowedRole) {
+    console.warn(`Access denied. User role '${user?.role}' is not '${allowedRole}'`);
+    const redirectPath = user?.role
+      ? `/dashboard/${user.role.toLowerCase()}`
+      : '/';
+    return <Navigate to={redirectPath} replace />;
+  }
+
+  // ✅ Authorized → render nested route content
+  return <Outlet />;
 };
