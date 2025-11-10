@@ -120,16 +120,14 @@ app.post('/api/admin/settings', async (req, res) => {
     }
 });
 
-// server/server.js (near other admin routes)
 app.get('/api/admin/usage', async (req, res) => {
-  const months = parseInt(req.query.months || '12', 10);
-  try {
-    const usage = await db.fetchUsageData(months);
-    res.status(200).json({ usage });
-  } catch (err) {
-    console.error('Usage endpoint error:', err);
-    res.status(500).json({ message: "Failed to fetch usage data." });
-  }
+    try {
+        const data = await db.fetchUsageData(); // we'll add this function next
+        res.status(200).json({ usage: data });
+    } catch (error) {
+        console.error('Usage data fetch error:', error);
+        res.status(500).json({ message: "Failed to fetch usage data." });
+    }
 });
 
 // Load port from .env or default to 3001

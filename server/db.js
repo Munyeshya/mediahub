@@ -417,3 +417,59 @@ export async function fetchUsageData(months = 12) {
     throw new Error("Could not fetch usage data.");
   }
 }
+
+// -------------------------------------------------------------------
+//  PLATFORM USAGE DATA
+// -------------------------------------------------------------------
+export async function fetchUsageData(months = 12) {
+    try {
+        // monthly revenue
+        const revenueSql = `
+            SELECT DATE_FORMAT(P.created_at, '%b %Y') AS month, SUM(P.amount) AS revenue
+            FROM Payment P
+            WHERE P.created_at >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
+            GROUP BY YEAR(P.created_at), MONTH(P.created_at)
+            ORDER BY YEAR(P.created_at), MONTH(P.created_at);
+        `;
+        const revenue = await executeSql(revenueSql, [months]);
+
+        // monthly bookings
+        const bookingSql = `
+            SELECT DATE_FORMAT(B.created_at, '%b %Y') AS month, COUNT(B.booking_id) AS bookings
+            FROM Booking B
+            WHERE B.created_at >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
+            GROUP BY YEAR(B.created_at), MONTH(B.created_at)
+            ORDER BY YEAR(B.created_at), MONTH(B.created_at);
+        `;
+        const bookings = await executeSql(bookingSql, [months]);
+
+        // monthly new clients
+        const clientsSql = `
+            SELECT DATE_FORMAT(C.created_at, '%b %Y') AS month, COUNT(C.client_id) AS newClients
+            FROM Client C
+            WHERE C.created_at >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
+            GROUP BY YEAR(C.created_at), MONTH(C.created_at)
+            ORDER BY YEAR(C.created_at), MONTH(C.created_at);
+        `;
+        const clients = await executeSql(clientsSql, [months]);
+
+        // Merge results
+        const map = new Map();
+        const merge = (rows, key, field) => {
+            rows.forEach(r => {
+                const m = r.month;
+                const obj = map.get(m) || { month: m, revenue: 0, bookings: 0, newClients: 0 };
+                obj[field] = Number(r[key] || 0);
+                map.set(m, obj);
+            });
+        };
+        merge(revenue, 'revenue', 'revenue');
+        merge(bookings, 'bookings', 'bookings');
+        merge(clients, 'newClients', 'newClients');
+
+        return Array.from(map.values());
+    } catch (err) {
+        console.error("fetchUsageData error:", err);
+        throw new Error("Could not fetch usage data");
+    }
+}

@@ -1,30 +1,45 @@
-// src/pages/dashboard/AdminHome.jsx
 import React, { useState, useEffect } from 'react';
-import { fetchDashboardOverviewData } from '@/logic/db'; // Import the new data function
+import { fetchDashboardOverviewData } from '@/logic/db';
 import { DashboardMetricCard } from '@/components/dashboard/DashboardMetricCard';
-import { MonthlyRevenueChart, GiverStatusPieChart, ServiceUsageBarChart,PlatformUsageChart } from '@/components/dashboard/DashboardCharts';
-import { Loader2, DollarSign, Users, Calendar, BarChart, X, CheckCircle } from 'lucide-react';
+import {
+    MonthlyRevenueChart,
+    GiverStatusPieChart,
+    ServiceUsageBarChart,
+    PlatformUsageChart
+} from '@/components/dashboard/DashboardCharts';
+import { Loader2, DollarSign, Users, BarChart, X, CheckCircle } from 'lucide-react';
 
-const formatterRWF = new Intl.NumberFormat('en-RW', { style: 'currency', currency: 'RWF', minimumFractionDigits: 0 });
-<PlatformUsageChart data={usageData} />
+const formatterRWF = new Intl.NumberFormat('en-RW', {
+    style: 'currency',
+    currency: 'RWF',
+    minimumFractionDigits: 0
+});
 
 export function AdminHome() {
     const [data, setData] = useState(null);
+    const [usageData, setUsageData] = useState([]); // ✅ for PlatformUsageChart
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         const loadData = async () => {
             try {
+                // Load main dashboard metrics
                 const overviewData = await fetchDashboardOverviewData();
                 setData(overviewData);
+
+                // Fetch platform usage data
+                const res = await fetch('http://localhost:3001/api/admin/usage');
+                const json = await res.json();
+                setUsageData(json.usage || []);
             } catch (err) {
                 console.error(err);
-                setError("Failed to fetch dashboard data. Check database connection.");
+                setError('Failed to fetch dashboard data. Check database connection.');
             } finally {
                 setIsLoading(false);
             }
         };
+
         loadData();
     }, []);
 
@@ -33,7 +48,9 @@ export function AdminHome() {
             <div className="flex flex-col items-center justify-center h-full min-h-screen pt-10 text-white">
                 <Loader2 className="h-10 w-10 animate-spin text-amber-500 mb-4" />
                 <p className="text-lg">Loading Admin Dashboard Data...</p>
-                <p className="text-sm text-gray-500">Aggregating complex metrics from the database...</p>
+                <p className="text-sm text-gray-500">
+                    Aggregating complex metrics from the database...
+                </p>
             </div>
         );
     }
@@ -55,38 +72,39 @@ export function AdminHome() {
             <h1 className="text-4xl font-extrabold text-white border-b-2 border-amber-500/50 pb-2">
                 Platform Overview 🌟
             </h1>
-            
+
             <p className="text-gray-400">
-                A data-driven snapshot of MediaHub's financial performance, community growth, and service popularity.
+                A data-driven snapshot of MediaHub's financial performance, community growth, and
+                service popularity.
             </p>
 
             {/* 1. KEY METRICS GRID */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <DashboardMetricCard 
-                    title="Total Revenue (Completed)" 
-                    value={keyMetrics.totalRevenue} 
-                    icon={DollarSign} 
+                <DashboardMetricCard
+                    title="Total Revenue (Completed)"
+                    value={keyMetrics.totalRevenue}
+                    icon={DollarSign}
                     description={`Over ${keyMetrics.totalBookings} total bookings`}
                     color="text-green-400"
                 />
-                <DashboardMetricCard 
-                    title="Total Bookings" 
-                    value={keyMetrics.totalBookings} 
-                    icon={BarChart} 
+                <DashboardMetricCard
+                    title="Total Bookings"
+                    value={keyMetrics.totalBookings}
+                    icon={BarChart}
                     description="Total transactions initiated"
                     color="text-blue-400"
                 />
-                <DashboardMetricCard 
-                    title="Active Givers" 
-                    value={keyMetrics.activeGivers} 
-                    icon={CheckCircle} 
+                <DashboardMetricCard
+                    title="Active Givers"
+                    value={keyMetrics.activeGivers}
+                    icon={CheckCircle}
                     description="Verified and active creative profiles"
                     color="text-amber-500"
                 />
-                <DashboardMetricCard 
-                    title="New Clients (30 Days)" 
-                    value={keyMetrics.newClientsLast30Days} 
-                    icon={Users} 
+                <DashboardMetricCard
+                    title="New Clients (30 Days)"
+                    value={keyMetrics.newClientsLast30Days}
+                    icon={Users}
                     description="New user accounts created"
                     color="text-purple-400"
                 />
@@ -94,12 +112,10 @@ export function AdminHome() {
 
             {/* 2. CHARTS GRID */}
             <div className="grid gap-6 lg:grid-cols-3">
-                {/* Large Revenue Chart (2/3 width) */}
                 <div className="lg:col-span-2">
                     <MonthlyRevenueChart data={monthlyRevenueData} />
                 </div>
-                
-                {/* Giver Status Pie Chart (1/3 width) */}
+
                 <div className="lg:col-span-1">
                     <GiverStatusPieChart data={giverStatusData} />
                 </div>
@@ -108,6 +124,9 @@ export function AdminHome() {
             {/* 3. ADDITIONAL CHARTS */}
             <div className="grid gap-6 lg:grid-cols-1">
                 <ServiceUsageBarChart data={serviceUsageData} />
+
+                {/* ✅ New Platform Usage Growth Chart */}
+                <PlatformUsageChart data={usageData} />
             </div>
         </div>
     );
