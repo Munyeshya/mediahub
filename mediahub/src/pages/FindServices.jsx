@@ -304,11 +304,30 @@ export function FindServices() {
 
                             <Button
                                 className="w-full bg-amber-500 text-gray-900 hover:bg-amber-400 mt-4"
-                                onClick={handleBooking}
+                                onClick={async () => {
+                                    if (!bookingDate) return toast.error("Please select a date.");
+
+                                    setBookingLoading(true);
+                                    const success = await createBooking({
+                                        giver_id: selectedGiver.giver_id,
+                                        service_id: selectedGiver.service_id || 1,
+                                        start_date: bookingDate,
+                                        end_date: bookingDate,
+                                        total_price_RWF: selectedGiver.price_RWF || 0,
+                                    });
+                                    setBookingLoading(false);
+
+                                    if (success) {
+                                        setSelectedGiver(null);
+                                        setBookingDate("");
+                                        setBookingNote("");
+                                    }
+                                }}
                                 disabled={bookingLoading}
                             >
                                 {bookingLoading ? "Sending Request..." : "Confirm Booking"}
                             </Button>
+
                         </div>
                     </DialogContent>
                 </Dialog>

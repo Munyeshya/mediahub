@@ -16,9 +16,17 @@ export const AuthProvider = ({ children }) => {
 
   // ✅ LOGIN — set user object {id, email, role}
   const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
-  };
+  // Save to React state
+  setUser(userData);
+
+  // Save full user to localStorage
+  localStorage.setItem("user", JSON.stringify(userData));
+
+  // 🔥 ALSO store separate identifiers for quick access elsewhere
+  if (userData?.id) localStorage.setItem("userId", userData.id);
+  if (userData?.role) localStorage.setItem("userRole", userData.role);
+  if (userData?.email) localStorage.setItem("userEmail", userData.email);
+};
 
   // ✅ LOGOUT — clear storage and redirect
   const logout = () => {
