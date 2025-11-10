@@ -546,7 +546,7 @@ app.post("/api/bookings", async (req, res) => {
   }
 });
 
-// PUT /api/bookings/:booking_id/status
+// ✅ Update booking status (Accept / Reject / Complete)
 app.put("/api/bookings/:booking_id/status", async (req, res) => {
   const { booking_id } = req.params;
   const { status } = req.body;
@@ -557,14 +557,18 @@ app.put("/api/bookings/:booking_id/status", async (req, res) => {
       return res.status(400).json({ message: "Invalid booking status" });
     }
 
-    await pool.query(
+    const [result] = await pool.query(
       "UPDATE booking SET status = ? WHERE booking_id = ?",
       [status, booking_id]
     );
 
-    res.json({ message: `Booking ${status.toLowerCase()} successfully` });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    res.json({ message: `Booking ${status.toLowerCase()} successfully.` });
   } catch (err) {
-    console.error("Error updating booking status:", err);
+    console.error("❌ Error updating booking status:", err);
     res.status(500).json({ message: "Failed to update booking status" });
   }
 });

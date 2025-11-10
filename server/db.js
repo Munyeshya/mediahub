@@ -16,14 +16,13 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Create a connection pool using environment variables
 const pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT, 
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
 /**
@@ -42,6 +41,16 @@ async function executeSql(sql, params = []) {
         throw new Error("Database query failed.");
     }
 }
+
+(async () => {
+  try {
+    const conn = await pool.getConnection();
+    console.log("✅ Database connected successfully!");
+    conn.release();
+  } catch (err) {
+    console.error("❌ Database connection failed:", err.message);
+  }
+})();
 
 // -------------------------------------------------------------------
 // 2. AUTHENTICATION LOGIC (Backend Handler)
@@ -1094,7 +1103,7 @@ export async function createBooking({ giver_id, client_id, service_id, start_dat
   return booking;
 }
 
-
+export { pool };
 
 
 
