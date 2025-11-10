@@ -14,7 +14,7 @@ export function GiverProfile() {
   const [selectedBooking, setSelectedBooking] = useState(false);
 
   useEffect(() => {
-    // if (!id) return;
+    if (!id) return;
     const loadData = async () => {
       setIsLoading(true);
       try {

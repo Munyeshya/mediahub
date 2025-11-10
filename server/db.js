@@ -1090,10 +1090,10 @@ export async function createBooking({ giver_id, client_id, service_id, start_dat
     total_price_RWF,
   ]);
 
-  // Return the created booking
   const [booking] = await executeSql("SELECT * FROM booking WHERE booking_id = ?", [result.insertId]);
   return booking;
 }
+
 
 
 
