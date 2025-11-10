@@ -236,3 +236,22 @@ app.delete("/api/admin/services/:id", async (req, res) => {
   }
 });
 
+
+// --- GET DETAILED GIVER PROFILE ---
+app.get("/api/admin/givers/:giverId", async (req, res) => {
+  const { giverId } = req.params;
+
+  try {
+    const giver = await db.fetchGiverDetails(giverId);
+
+    if (!giver) {
+      return res.status(404).json({ message: "Giver not found" });
+    }
+
+    res.status(200).json(giver);
+  } catch (error) {
+    console.error("Error fetching giver details:", error);
+    res.status(500).json({ message: "Failed to fetch giver details." });
+  }
+});
+

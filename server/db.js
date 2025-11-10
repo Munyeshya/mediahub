@@ -488,3 +488,57 @@ export async function deleteService(id) {
   }
 }
 
+// --- GET SINGLE GIVER DETAILS ---
+export async function fetchGiverDetails(giverId) {
+  const sql = `
+    SELECT 
+      sg.giver_id AS id,
+      sg.name,
+      sg.email,
+      sg.is_verified,
+      sg.created_at,
+      p.bio,
+      p.city,
+      p.phone,
+      p.avg_rating,
+      p.status AS profile_status,
+      GROUP_CONCAT(DISTINCT st.service_name SEPARATOR ', ') AS services,
+      COUNT(DISTINCT b.booking_id) AS total_bookings,
+      COALESCE(SUM(pay.amount), 0) AS total_earned
+    FROM service_giver sg
+    LEFT JOIN profile p ON sg.giver_id = p.giver_id
+    LEFT JOIN giver_service_price gsp ON sg.giver_id = gsp.giver_id
+    LEFT JOIN service_type st ON gsp.service_id = st.service_id
+    LEFT JOIN booking b ON sg.giver_id = b.giver_id
+    LEFT JOIN payment pay ON b.booking_id = pay.booking_id
+    WHERE sg.giver_id = ?
+    GROUP BY sg.giver_id;
+  `;
+
+  try {
+    const rows = await executeSql(sql, [giverId]);
+    if (rows.length === 0) return null;
+
+    const g = rows[0];
+
+    return {
+      id: g.id,
+      name: g.name,
+      email: g.email,
+      city: g.city,
+      phone: g.phone,
+      bio: g.bio || "No biography provided.",
+      services: g.services ? g.services.split(", ") : [],
+      status: g.profile_status || (g.is_verified ? "Active" : "Pending"),
+      joined: g.created_at,
+      rating: g.avg_rating || 0,
+      totalBookings: g.total_bookings || 0,
+      totalEarnings: g.total_earned || 0,
+      documents: ["ID Verification.pdf", "Portfolio Reference.docx"], // optional mock for now
+    };
+  } catch (error) {
+    console.error("[DB Query Error] fetchGiverDetails:", error);
+    throw new Error("Could not fetch giver details.");
+  }
+}
+
