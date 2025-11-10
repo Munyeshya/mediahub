@@ -2,10 +2,17 @@ import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { RotateCw, Edit, Save, Eye, EyeOff } from "lucide-react";
+import { RotateCw, Edit, Save, Eye, EyeOff, PlusCircle } from "lucide-react";
 import { toast } from "react-toastify";
 import { useAuth } from "@/logic/auth";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 export function GiverServices() {
   const { user } = useAuth(); // giver_id
@@ -15,10 +22,20 @@ export function GiverServices() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // 🔹 Add Service Modal States
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [serviceTypes, setServiceTypes] = useState([]);
+  const [newService, setNewService] = useState({
+    service_id: "",
+    base_unit: "",
+    price_RWF: "",
+  });
+
   const API_URL = user?.id
     ? `http://localhost:3001/api/giver/${user.id}/services`
     : null;
 
+  // --- Load giver's services ---
   useEffect(() => {
     if (!API_URL) return;
 
@@ -38,6 +55,21 @@ export function GiverServices() {
 
     fetchServices();
   }, [API_URL]);
+
+  // --- Fetch service types for dropdown ---
+  useEffect(() => {
+    const fetchTypes = async () => {
+      try {
+        const res = await fetch("http://localhost:3001/api/service-types");
+        if (!res.ok) throw new Error("Failed to load service types.");
+        const json = await res.json();
+        setServiceTypes(json);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchTypes();
+  }, []);
 
   // --- Save updated price ---
   const handleSave = async (serviceId) => {
@@ -94,7 +126,32 @@ export function GiverServices() {
     }
   };
 
-  // --- UI states ---
+  // --- Add new service ---
+  const handleAddService = async () => {
+    if (!newService.service_id || !newService.price_RWF) {
+      return toast.error("Please fill all fields.");
+    }
+    try {
+      const res = await fetch(`http://localhost:3001/api/giver/${user.id}/services`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newService),
+      });
+
+      if (!res.ok) throw new Error("Failed to add new service.");
+      toast.success("Service added successfully! 🎉");
+      setShowAddModal(false);
+      setNewService({ service_id: "", base_unit: "", price_RWF: "" });
+
+      // reload services
+      const updated = await fetch(API_URL).then((r) => r.json());
+      setServices(updated);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  };
+
+  // --- UI States ---
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-40 text-amber-500">
@@ -114,9 +171,19 @@ export function GiverServices() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-white">My Services</h2>
+        <Button
+          onClick={() => setShowAddModal(true)}
+          className="bg-amber-500 text-gray-900 hover:bg-amber-400 font-semibold flex items-center"
+        >
+          <PlusCircle className="h-5 w-5 mr-2" /> Add Service
+        </Button>
+      </div>
+
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
-          <CardTitle className="text-2xl text-white">My Services</CardTitle>
+          <CardTitle className="text-xl text-white">Services List</CardTitle>
         </CardHeader>
 
         <CardContent className="overflow-x-auto">
@@ -198,6 +265,59 @@ export function GiverServices() {
           )}
         </CardContent>
       </Card>
+
+      {/* ADD SERVICE MODAL */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent className="bg-gray-900 border border-gray-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-amber-500">
+              Add New Service
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <Label className="block text-gray-400 mb-1">Service Type</Label>
+            <Select
+              value={newService.service_id}
+              onValueChange={(v) => setNewService({ ...newService, service_id: v })}
+            >
+              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                <SelectValue placeholder="Select a service" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                {serviceTypes.map((type) => (
+                  <SelectItem key={type.service_id} value={type.service_id.toString()}>
+                    {type.service_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Label className="block text-gray-400 mb-1">Base Unit</Label>
+            <Input
+              placeholder="e.g., per hour"
+              value={newService.base_unit}
+              onChange={(e) => setNewService({ ...newService, base_unit: e.target.value })}
+              className="bg-gray-800 border-gray-700 text-white"
+            />
+
+            <Label className="block text-gray-400 mb-1">Price (RWF)</Label>
+            <Input
+              type="number"
+              placeholder="Enter price"
+              value={newService.price_RWF}
+              onChange={(e) => setNewService({ ...newService, price_RWF: e.target.value })}
+              className="bg-gray-800 border-gray-700 text-white"
+            />
+
+            <Button
+              onClick={handleAddService}
+              className="w-full bg-amber-500 hover:bg-amber-400 text-gray-900 font-bold"
+            >
+              Add Service
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

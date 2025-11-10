@@ -3,9 +3,20 @@ import { useParams } from "react-router-dom";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "react-toastify";
-import { Star, Mail, MapPin, Camera, Calendar, User, RotateCw } from "lucide-react";
-
+import {
+  Star,
+  Mail,
+  MapPin,
+  Camera,
+  Calendar,
+  User,
+  RotateCw,
+  CreditCard,
+  CheckCircle,
+  Smartphone,
+} from "lucide-react";
 
 export function BookingDetails() {
   const { bookingId } = useParams();
@@ -17,8 +28,14 @@ export function BookingDetails() {
   const [isLoading, setIsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [editing, setEditing] = useState(false);
-
-
+  const [paid, setPaid] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("card");
+  const [paymentInfo, setPaymentInfo] = useState({
+    name: "",
+    number: "",
+  });
+  const [processing, setProcessing] = useState(false);
 
   // ✅ Fetch booking + review
   useEffect(() => {
@@ -32,6 +49,7 @@ export function BookingDetails() {
         if (!bookingRes.ok) throw new Error("Failed to fetch booking details");
         const bookingData = await bookingRes.json();
         setData(bookingData);
+        setPaid(bookingData.is_paid || false);
 
         if (reviewRes.ok) {
           const reviewData = await reviewRes.json();
@@ -47,7 +65,24 @@ export function BookingDetails() {
     fetchBookingAndReview();
   }, [bookingId]);
 
-  // ✅ Handle submit (add or update review)
+  // ✅ Simulate payment processing
+  const handlePaymentSubmit = (e) => {
+    e.preventDefault();
+    if (!paymentInfo.name || !paymentInfo.number)
+      return toast.error("Please fill in all payment details.");
+
+    setProcessing(true);
+    toast.info("Processing payment... 💳");
+
+    setTimeout(() => {
+      setPaid(true);
+      setProcessing(false);
+      setShowPaymentModal(false);
+      toast.success("Payment successful! ✅");
+    }, 2500);
+  };
+
+  // ✅ Handle review
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (rating === 0) return toast.error("Please select a rating.");
@@ -74,9 +109,7 @@ export function BookingDetails() {
       if (!res.ok) throw new Error("Failed to submit review.");
 
       const updated = await res.json();
-      toast.success(
-        review ? "Review updated successfully! ✏️" : "Review submitted successfully! 🎉"
-      );
+      toast.success(review ? "Review updated ✏️" : "Review submitted 🎉");
       setReview(updated);
       setEditing(false);
       setRating(0);
@@ -88,26 +121,21 @@ export function BookingDetails() {
     }
   };
 
-  // ✅ Loading state
-  if (isLoading) {
+  if (isLoading)
     return (
       <div className="flex justify-center items-center h-60 text-amber-500">
         <RotateCw className="h-6 w-6 animate-spin mr-2" />
         <p>Loading booking details...</p>
       </div>
     );
-  }
 
-  // ✅ No booking found
-  if (!data) {
+  if (!data)
     return (
       <div className="text-center text-gray-400 bg-gray-800 p-6 rounded-lg border border-gray-700">
         <p>Booking not found.</p>
       </div>
     );
-  }
 
-  // ✅ Render star component
   const renderStars = (value) => {
     const fullStars = Math.floor(value);
     const hasHalf = value % 1 !== 0;
@@ -115,7 +143,8 @@ export function BookingDetails() {
 
     for (let i = 1; i <= 5; i++) {
       if (i <= fullStars) stars.push("fill-amber-400 text-amber-400");
-      else if (i === fullStars + 1 && hasHalf) stars.push("fill-amber-300/50 text-amber-300/50");
+      else if (i === fullStars + 1 && hasHalf)
+        stars.push("fill-amber-300/50 text-amber-300/50");
       else stars.push("text-gray-600");
     }
 
@@ -170,12 +199,23 @@ export function BookingDetails() {
             </p>
           </div>
 
-          {data.giver_bio && (
-            <div className="border-t border-gray-700 pt-3">
-              <h4 className="text-lg font-semibold text-amber-500 mb-1">Giver Bio</h4>
-              <p className="text-gray-400 italic">{data.giver_bio}</p>
-            </div>
-          )}
+          {/* ✅ Payment Section */}
+          <div className="border-t border-gray-700 pt-4 mt-4">
+            <h4 className="text-lg font-semibold text-amber-500 mb-2">Payment</h4>
+            {paid ? (
+              <div className="flex items-center text-green-400 space-x-2">
+                <CheckCircle className="h-5 w-5" />
+                <p>Payment completed successfully</p>
+              </div>
+            ) : (
+              <Button
+                onClick={() => setShowPaymentModal(true)}
+                className="w-full bg-green-500 text-gray-900 hover:bg-green-400 font-semibold"
+              >
+                <CreditCard className="h-4 w-4 mr-2" /> Pay Now
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -266,6 +306,82 @@ export function BookingDetails() {
           )}
         </CardContent>
       </Card>
+
+      {/* --- PAYMENT MODAL --- */}
+      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
+        <DialogContent className="bg-gray-900 border border-gray-700 text-white max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-amber-500">
+              Complete Payment
+            </DialogTitle>
+          </DialogHeader>
+
+          <form onSubmit={handlePaymentSubmit} className="space-y-4 mt-4">
+            <div>
+              <label className="block text-gray-400 mb-1">Payment Method</label>
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
+              >
+                <option value="card">Credit/Debit Card</option>
+                <option value="momo">Mobile Money</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-gray-400 mb-1">
+                {paymentMethod === "card" ? "Card Number" : "Phone Number"}
+              </label>
+              <input
+                type="text"
+                value={paymentInfo.number}
+                onChange={(e) =>
+                  setPaymentInfo({ ...paymentInfo, number: e.target.value })
+                }
+                className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
+                placeholder={
+                  paymentMethod === "card" ? "1234 5678 9012 3456" : "07XX XXX XXX"
+                }
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-400 mb-1">Name on Card / Account</label>
+              <input
+                type="text"
+                value={paymentInfo.name}
+                onChange={(e) =>
+                  setPaymentInfo({ ...paymentInfo, name: e.target.value })
+                }
+                className="w-full bg-gray-800 border border-gray-700 rounded-md p-2 text-white"
+                placeholder="John Doe"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={processing}
+              className="w-full bg-green-500 hover:bg-green-400 text-gray-900 font-semibold"
+            >
+              {processing ? (
+                <>
+                  <RotateCw className="h-4 w-4 mr-2 animate-spin" /> Processing Payment...
+                </>
+              ) : (
+                <>
+                  {paymentMethod === "card" ? (
+                    <CreditCard className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Smartphone className="h-4 w-4 mr-2" />
+                  )}
+                  Pay RWF {Number(data.total_price_RWF).toLocaleString()}
+                </>
+              )}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

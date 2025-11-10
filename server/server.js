@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import * as db from './db.js'; // Import your DB functions
 import { pool } from "./db.js";
 import { fetchServices, addService, updateService, deleteService } from "./db.js";
+import bcrypt from 'bcryptjs';
 
 // --- FIX: create the Express app before using app.use(...) ---
 const app = express();
@@ -546,32 +547,83 @@ app.post("/api/bookings", async (req, res) => {
   }
 });
 
-// ✅ Update booking status (Accept / Reject / Complete)
-app.put("/api/bookings/:booking_id/status", async (req, res) => {
-  const { booking_id } = req.params;
+
+// ✅ Update booking status
+app.put("/api/bookings/:bookingId/status", async (req, res) => {
+  const { bookingId } = req.params;
   const { status } = req.body;
 
-  try {
-    const validStatuses = ["Pending", "Accepted", "Rejected", "Completed"];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ message: "Invalid booking status" });
-    }
+  // validate
+  if (!["Pending", "Accepted", "Rejected", "In Progress", "Completed", "Cancelled"].includes(status)) {
+    return res.status(400).json({ message: "Invalid booking status." });
+  }
 
+  try {
     const [result] = await pool.query(
       "UPDATE booking SET status = ? WHERE booking_id = ?",
-      [status, booking_id]
+      [status, bookingId]
     );
 
     if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Booking not found" });
+      return res.status(404).json({ message: "Booking not found." });
     }
 
-    res.json({ message: `Booking ${status.toLowerCase()} successfully.` });
+    res.json({ message: `Booking ${bookingId} marked as ${status}.` });
   } catch (err) {
     console.error("❌ Error updating booking status:", err);
-    res.status(500).json({ message: "Failed to update booking status" });
+    res.status(500).json({ message: "Database error updating booking." });
   }
 });
+
+
+app.post("/api/profile/giver", async (req, res) => {
+  try {
+    const { name, email, password, bio, city, category, rate, portfolioLinks } = req.body;
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const [giverResult] = await pool.query(
+      "INSERT INTO service_giver (name, email, password_hash, is_verified) VALUES (?, ?, ?, ?)",
+      [name, email, passwordHash, 0]
+    );
+
+    const giverId = giverResult.insertId;
+
+    // Insert portfolio links
+    if (portfolioLinks && portfolioLinks.length > 0) {
+      for (const link of portfolioLinks) {
+        if (link.trim() !== "") {
+          await pool.query(
+            "INSERT INTO giver_portfolio (giver_id, title, description, media_url, media_type) VALUES (?, ?, ?, ?, ?)",
+            [giverId, "Portfolio Sample", bio || "", link, "image"]
+          );
+        }
+      }
+    }
+
+    res.status(201).json({ message: "Giver profile created successfully!" });
+  } catch (err) {
+    console.error("❌ Error creating giver profile:", err);
+    res.status(500).json({ error: "Failed to create giver profile" });
+  }
+});
+
+app.post("/api/profile/client", async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await pool.query(
+      "INSERT INTO client (email, password_hash, full_name) VALUES (?, ?, ?)",
+      [email, passwordHash, name]
+    );
+
+    res.status(201).json({ message: "Client profile created successfully!" });
+  } catch (err) {
+    console.error("❌ Error creating client:", err);
+    res.status(500).json({ error: "Failed to create client profile" });
+  }
+});
+
 
 
 
