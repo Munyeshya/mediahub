@@ -338,94 +338,18 @@ export async function updateSystemSettings(settings) {
     }
 }
 
-// server/db.js (add near other exported functions)
-export async function fetchUsageData(months = 12) {
-  try {
-    // 1) Revenue per month (last `months` months)
-    const revenueSql = `
-      SELECT DATE_FORMAT(P.created_at, '%b %Y') AS month,
-             COALESCE(SUM(P.amount),0) AS revenue,
-             MIN(P.created_at) as first_date_in_month
-      FROM Payment P
-      WHERE P.created_at >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
-      GROUP BY YEAR(P.created_at), MONTH(P.created_at)
-      ORDER BY YEAR(P.created_at), MONTH(P.created_at);
-    `;
-    const revenueRows = await executeSql(revenueSql, [months]);
 
-    // 2) Bookings per month
-    const bookingsSql = `
-      SELECT DATE_FORMAT(created_at, '%b %Y') AS month,
-             COUNT(booking_id) AS bookings
-      FROM Booking
-      WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
-      GROUP BY YEAR(created_at), MONTH(created_at)
-      ORDER BY YEAR(created_at), MONTH(created_at);
-    `;
-    const bookingRows = await executeSql(bookingsSql, [months]);
-
-    // 3) New clients per month
-    const clientsSql = `
-      SELECT DATE_FORMAT(created_at, '%b %Y') AS month,
-             COUNT(client_id) AS newClients
-      FROM Client
-      WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
-      GROUP BY YEAR(created_at), MONTH(created_at)
-      ORDER BY YEAR(created_at), MONTH(created_at);
-    `;
-    const clientRows = await executeSql(clientsSql, [months]);
-
-    // Merge the three result sets by month (preserving chronological order)
-    const mapByMonth = new Map();
-
-    // Seed months from revenue (keeps chronological order). If some months miss revenue, bookings or clients will still be merged below.
-    revenueRows.forEach(r => {
-      mapByMonth.set(r.month, { month: r.month, revenue: Number(r.revenue) });
-    });
-    bookingRows.forEach(b => {
-      const item = mapByMonth.get(b.month) || { month: b.month, revenue: 0 };
-      item.bookings = Number(b.bookings);
-      mapByMonth.set(b.month, item);
-    });
-    clientRows.forEach(c => {
-      const item = mapByMonth.get(c.month) || { month: c.month, revenue: 0 };
-      item.newClients = Number(c.newClients);
-      mapByMonth.set(c.month, item);
-    });
-
-    // Convert to array and ensure months are in chronological order.
-    // Use revenueRows + bookingRows + clientRows to collect months in chronological order if some arrays are empty.
-    const monthsOrder = Array.from(new Set([
-      ...revenueRows.map(r => r.month),
-      ...bookingRows.map(b => b.month),
-      ...clientRows.map(c => c.month),
-    ]));
-
-    const result = monthsOrder.map(m => {
-      const it = mapByMonth.get(m) || { month: m, revenue: 0, bookings: 0, newClients: 0 };
-      return {
-        month: it.month,
-        revenue: it.revenue || 0,
-        bookings: it.bookings || 0,
-        newClients: it.newClients || 0
-      };
-    });
-
-    return result;
-  } catch (error) {
-    console.error("Error fetching usage data:", error);
-    throw new Error("Could not fetch usage data.");
-  }
-}
 
 // -------------------------------------------------------------------
-//  PLATFORM USAGE DATA
+//  PLATFORM USAGE DATA (compliant with ONLY_FULL_GROUP_BY)
 // -------------------------------------------------------------------
 export async function fetchUsageData(months = 12) {
     try {
-        // monthly revenue
+        // --- 1. Monthly Revenue ---
         const revenueSql = `
-            SELECT DATE_FORMAT(P.created_at, '%b %Y') AS month, SUM(P.amount) AS revenue
+            SELECT 
+                DATE_FORMAT(MIN(P.created_at), '%b %Y') AS month,
+                COALESCE(SUM(P.amount), 0) AS revenue
             FROM Payment P
             WHERE P.created_at >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
             GROUP BY YEAR(P.created_at), MONTH(P.created_at)
@@ -433,9 +357,11 @@ export async function fetchUsageData(months = 12) {
         `;
         const revenue = await executeSql(revenueSql, [months]);
 
-        // monthly bookings
+        // --- 2. Monthly Bookings ---
         const bookingSql = `
-            SELECT DATE_FORMAT(B.created_at, '%b %Y') AS month, COUNT(B.booking_id) AS bookings
+            SELECT 
+                DATE_FORMAT(MIN(B.created_at), '%b %Y') AS month,
+                COUNT(B.booking_id) AS bookings
             FROM Booking B
             WHERE B.created_at >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
             GROUP BY YEAR(B.created_at), MONTH(B.created_at)
@@ -443,9 +369,11 @@ export async function fetchUsageData(months = 12) {
         `;
         const bookings = await executeSql(bookingSql, [months]);
 
-        // monthly new clients
+        // --- 3. Monthly New Clients ---
         const clientsSql = `
-            SELECT DATE_FORMAT(C.created_at, '%b %Y') AS month, COUNT(C.client_id) AS newClients
+            SELECT 
+                DATE_FORMAT(MIN(C.created_at), '%b %Y') AS month,
+                COUNT(C.client_id) AS newClients
             FROM Client C
             WHERE C.created_at >= DATE_SUB(CURDATE(), INTERVAL ? MONTH)
             GROUP BY YEAR(C.created_at), MONTH(C.created_at)
@@ -453,23 +381,35 @@ export async function fetchUsageData(months = 12) {
         `;
         const clients = await executeSql(clientsSql, [months]);
 
-        // Merge results
+        // --- Merge datasets ---
         const map = new Map();
-        const merge = (rows, key, field) => {
+
+        const merge = (rows, keyName) => {
             rows.forEach(r => {
                 const m = r.month;
-                const obj = map.get(m) || { month: m, revenue: 0, bookings: 0, newClients: 0 };
-                obj[field] = Number(r[key] || 0);
-                map.set(m, obj);
+                const item = map.get(m) || { month: m, revenue: 0, bookings: 0, newClients: 0 };
+                item[keyName] = Number(r[keyName]) || 0;
+                map.set(m, item);
             });
         };
-        merge(revenue, 'revenue', 'revenue');
-        merge(bookings, 'bookings', 'bookings');
-        merge(clients, 'newClients', 'newClients');
 
-        return Array.from(map.values());
-    } catch (err) {
-        console.error("fetchUsageData error:", err);
-        throw new Error("Could not fetch usage data");
+        merge(revenue, 'revenue');
+        merge(bookings, 'bookings');
+        merge(clients, 'newClients');
+
+        // Sort months chronologically
+        const result = Array.from(map.values()).sort((a, b) => {
+            const d1 = new Date(a.month);
+            const d2 = new Date(b.month);
+            return d1 - d2;
+        });
+
+        console.log(`[DB SUCCESS] Fetched usage data (${result.length} months)`);
+        return result;
+
+    } catch (error) {
+        console.error('Error fetching usage data:', error);
+        throw new Error('Database query failed.');
     }
 }
+
