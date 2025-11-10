@@ -513,6 +513,36 @@ app.post("/api/giver/:giverId/portfolio", async (req, res) => {
     res.status(500).json({ message: "Failed to add portfolio item." });
   }
 });
+// Get single giver full profile
+app.get("/api/givers", async (req, res) => {
+  try {
+    const rows = await db.executeSql(`
+      SELECT 
+        sg.giver_id,
+        sg.name AS giver_name,
+        sg.email,
+        sg.is_verified,
+        COALESCE(p.bio, 'No bio provided') AS bio,
+        COALESCE(p.city, 'Unknown') AS city,
+        COALESCE(p.avg_rating, 0) AS avg_rating,
+        COALESCE(p.hourly_rate_RWF, 0) AS price_RWF,
+        COALESCE(st.service_name, 'Unlisted Service') AS service_name
+      FROM service_giver sg
+      LEFT JOIN profile p ON sg.giver_id = p.giver_id
+      LEFT JOIN giver_service_price gsp ON sg.giver_id = gsp.giver_id
+      LEFT JOIN service_type st ON gsp.service_id = st.service_id
+      WHERE sg.is_verified = 1
+      GROUP BY sg.giver_id
+      ORDER BY avg_rating DESC;
+    `);
+
+    res.json(rows);
+  } catch (error) {
+    console.error("Error fetching givers:", error);
+    res.status(500).json({ message: "Failed to load givers." });
+  }
+});
+
 
 
 

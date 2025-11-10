@@ -16,11 +16,13 @@ import { About } from './pages/About';
 import { Contact } from './pages/Contact';
 import { Profile } from './pages/Profile';
 import { Login } from './pages/Login';
+import { GiverProfile } from './pages/GiverProfile';
 
 // Dashboard Pages
 import { AdminDashboard } from './pages/dashboard/AdminDashboard';
 import { ClientDashboard } from './pages/dashboard/ClientDashboard'; 
 import { GiverDashboard } from './pages/dashboard/GiverDashboard';
+
 
 // --- Define the Public Layout Component ---
 // (No change needed here)
@@ -69,6 +71,7 @@ function App() {
                     <Route path="/about" element={<About />} />
                     <Route path="/contact" element={<Contact />} />
                     <Route path="/profile" element={<Profile />} />
+                    <Route path="/giver/:giverId" element={<GiverProfile />} />
                 </Route>
             </Routes>
         </AuthProvider>
