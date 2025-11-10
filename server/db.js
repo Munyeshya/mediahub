@@ -224,32 +224,46 @@ export async function fetchDashboardOverviewData() {
 export async function fetchGivers() {
     const sql = `
         SELECT
-            sg.giver_id AS id,
-            sg.email,
-            sg.is_verified,
-            sg.created_at,
-            p.full_name,
-            p.city
-        FROM
-            Service_Giver sg
-        LEFT JOIN
-            Profile p ON sg.giver_id = p.giver_id
-        ORDER BY
-            sg.created_at DESC;
+            g.giver_id AS id,
+            g.email,
+            g.is_verified,
+            g.created_at,
+            COALESCE(p.city, 'Unknown') AS city,
+            COALESCE(p.bio, '') AS bio,
+            COALESCE(p.avg_rating, 0.0) AS avg_rating,
+            CASE 
+                WHEN g.is_verified = 1 THEN 'Active'
+                WHEN g.is_verified = 0 THEN 'Pending'
+                ELSE 'Suspended'
+            END AS status,
+            (
+                SELECT GROUP_CONCAT(DISTINCT st.service_name SEPARATOR ', ')
+                FROM giver_service_price gsp2
+                JOIN service_type st ON gsp2.service_id = st.service_id
+                WHERE gsp2.giver_id = g.giver_id
+            ) AS service -- 🟢 use singular to match frontend
+        FROM service_giver g
+        LEFT JOIN profile p ON g.giver_id = p.giver_id
+        ORDER BY g.created_at DESC;
     `;
+
     try {
         const givers = await executeSql(sql);
-        console.log(`[DB SUCCESS] Fetched ${givers.length} service givers.`);
-        // Note: is_verified is a number (0/1) from MySQL; convert to boolean for clarity.
+        console.log(`[DB SUCCESS] Fetched ${givers.length} givers (merged services).`);
         return givers.map(giver => ({
             ...giver,
-            is_verified: !!giver.is_verified 
+            name: giver.email.split('@')[0].replace('.', ' '), // 🟢 simple fallback "name"
+            is_verified: !!giver.is_verified,
+            service: giver.service || 'Unassigned'
         }));
     } catch (error) {
-        console.error("Error fetching givers list:", error);
-        throw new Error("Could not fetch service givers from the database.");
+        console.error("[DB Query Error] FetchGivers:", error);
+        throw new Error("Database query failed.");
     }
 }
+
+
+
 
 /**
  * 💥 NEW EXPORT: Updates the is_verified status for a specific Service Giver.

@@ -137,3 +137,52 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Access the backend at http://localhost:${PORT}`);
 });
+
+// =========================================================
+// 🧑‍🎨  FETCH ALL GIVERS (CREATIVES) FOR MANAGE GIVERS PAGE
+// =========================================================
+app.get("/api/admin/givers", async (req, res) => {
+    try {
+        const sql = `
+            SELECT 
+                g.giver_id AS id,
+                g.email,
+                COALESCE(p.city, 'Unknown') AS city,
+                COALESCE(p.status, 'Pending') AS status,
+                COALESCE(p.bio, '') AS bio,
+                CASE
+                    WHEN s.service_name IS NOT NULL THEN s.service_name
+                    ELSE 'Unassigned'
+                END AS service,
+                COALESCE(p.avg_rating, 0.0) AS avg_rating
+            FROM service_giver g
+            LEFT JOIN profile p ON g.giver_id = p.giver_id
+            LEFT JOIN giver_service_price gsp ON g.giver_id = gsp.giver_id
+            LEFT JOIN service_type s ON gsp.service_id = s.service_id
+            ORDER BY g.created_at DESC;
+        `;
+        const givers = await executeSql(sql);
+        res.json(givers);
+    } catch (error) {
+        console.error("[ERROR] Fetch Givers:", error);
+        res.status(500).json({ message: "Failed to fetch givers." });
+    }
+});
+
+
+// =========================================================
+// 🔄  UPDATE GIVER STATUS (Active / Suspended / Pending)
+// =========================================================
+app.put("/api/admin/givers/:id/status", async (req, res) => {
+    const giverId = req.params.id;
+    const { status } = req.body;
+
+    try {
+        const sql = `UPDATE profile SET status = ? WHERE giver_id = ?`;
+        await executeSql(sql, [status, giverId]);
+        res.json({ message: "Giver status updated successfully." });
+    } catch (error) {
+        console.error("[ERROR] Update Giver Status:", error);
+        res.status(500).json({ message: "Failed to update giver status." });
+    }
+});

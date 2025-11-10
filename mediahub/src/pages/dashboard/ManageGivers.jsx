@@ -1,7 +1,7 @@
 // src/pages/dashboard/ManageGivers.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
-import { Link } from 'react-router-dom'; 
+import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,9 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from '@/components/ui/input';
 // 💥 NEW: Select component for filters
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, CheckCircle, Ban, Search, Info, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react'; 
+import { Eye, CheckCircle, Ban, Search, Info, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
-import { fetchGivers, updateGiverStatus } from '../../logic/db'; 
+import { fetchGivers, updateGiverStatus } from '../../logic/db';
 
 // --- CONFIGURATION CONSTANTS ---
 const ITEMS_PER_PAGE = 5; // Number of rows to show per page
@@ -46,7 +46,7 @@ export function ManageGivers() {
 
     // 💥 Pagination States
     const [currentPage, setCurrentPage] = useState(1);
-    
+
     // EFFECT: Fetch data on component mount (no change)
     useEffect(() => {
         const loadGivers = async () => {
@@ -64,7 +64,7 @@ export function ManageGivers() {
         };
 
         loadGivers();
-    }, []); 
+    }, []);
 
     // 💥 Memoized Logic for Filtering and Pagination
     const filteredAndPaginatedGivers = useMemo(() => {
@@ -79,23 +79,23 @@ export function ManageGivers() {
         if (serviceFilter !== 'All') {
             filteredGivers = filteredGivers.filter(g => g.service === serviceFilter);
         }
-        
+
         // 3. Apply Search Term (Name or Email)
         if (searchTerm) {
             const lowerCaseSearch = searchTerm.toLowerCase();
             filteredGivers = filteredGivers.filter(
-                g => g.name.toLowerCase().includes(lowerCaseSearch) || 
-                     g.email.toLowerCase().includes(lowerCaseSearch)
+                g => g.name.toLowerCase().includes(lowerCaseSearch) ||
+                    g.email.toLowerCase().includes(lowerCaseSearch)
             );
         }
-        
+
         // --- PAGINATION CALCULATION ---
         const totalItems = filteredGivers.length;
         const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
         // Ensure the current page is valid after filtering
         const safeCurrentPage = Math.min(currentPage, totalPages > 0 ? totalPages : 1);
-        
+
         const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
         const endIndex = startIndex + ITEMS_PER_PAGE;
 
@@ -117,7 +117,7 @@ export function ManageGivers() {
             setCurrentPage(page);
         }
     };
-    
+
     // Reset page to 1 whenever filters change
     useEffect(() => {
         setCurrentPage(1);
@@ -136,17 +136,17 @@ export function ManageGivers() {
             await updateGiverStatus(id, newStatus);
 
             // Finalize local state update on success
-            setGivers(prevGivers => 
-                prevGivers.map(giver => 
+            setGivers(prevGivers =>
+                prevGivers.map(giver =>
                     giver.id === id ? { ...giver, status: newStatus } : giver
                 )
             );
 
             // Show Toast Notification
-            const message = action === 'Approve' 
-                ? `✅ Giver ${giverToUpdate.name} has been approved and is now Active.` 
+            const message = action === 'Approve'
+                ? `✅ Giver ${giverToUpdate.name} has been approved and is now Active.`
                 : `❌ Giver ${giverToUpdate.name} has been suspended.`;
-            
+
             toast.success(message, {
                 position: "bottom-right",
                 theme: "dark",
@@ -155,8 +155,8 @@ export function ManageGivers() {
 
         } catch (err) {
             // Revert state on failure
-            setGivers(prevGivers => 
-                prevGivers.map(giver => 
+            setGivers(prevGivers =>
+                prevGivers.map(giver =>
                     giver.id === id ? { ...giver, status: originalStatus } : giver
                 )
             );
@@ -208,41 +208,41 @@ export function ManageGivers() {
                 </TableHeader>
                 <TableBody>
                     {paginatedGivers.map((giver) => (
-                        <TableRow key={giver.id} className="border-gray-700 hover:bg-gray-800/50">
+                        <TableRow key={`${giver.id}-${giver.service}`} className="border-gray-700 hover:bg-gray-800/50">
                             <TableCell className="font-medium text-gray-300">{giver.id}</TableCell>
                             <TableCell className="text-white">{giver.name}</TableCell>
                             <TableCell className="text-gray-400">{giver.email}</TableCell>
-                            <TableCell className="text-gray-300">{giver.service}</TableCell>
+                            <TableCell className="text-gray-300">{giver.services || '—'}</TableCell>
                             <TableCell>{getStatusBadge(giver.status)}</TableCell>
                             <TableCell className="text-right space-x-2">
-                                
+
                                 {/* VIEW BUTTON - Link to Details Page */}
                                 <Link to={`/dashboard/admin/givers/${giver.id}`} >
-                                    <Button 
-                                        size="icon" 
-                                        variant="ghost" 
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
                                         className="text-blue-400 hover:text-blue-300"
                                     >
                                         <Eye className="h-4 w-4" />
                                     </Button>
                                 </Link>
-                                
+
                                 {/* APPROVE BUTTON */}
                                 {giver.status === 'Pending' && (
-                                    <Button 
-                                        size="icon" 
+                                    <Button
+                                        size="icon"
                                         className="bg-green-600 hover:bg-green-700"
                                         onClick={() => handleAction(giver.id, 'Approve')}
                                     >
                                         <CheckCircle className="h-4 w-4" />
                                     </Button>
                                 )}
-                                
+
                                 {/* SUSPEND/ACTIVATE TOGGLE */}
                                 {giver.status !== 'Suspended' ? (
                                     // Suspend button for Active/Pending Givers
-                                    <Button 
-                                        size="icon" 
+                                    <Button
+                                        size="icon"
                                         variant="destructive"
                                         onClick={() => handleAction(giver.id, 'Suspend')}
                                     >
@@ -250,10 +250,10 @@ export function ManageGivers() {
                                     </Button>
                                 ) : (
                                     // Reactivate button for Suspended Givers
-                                    <Button 
-                                        size="icon" 
+                                    <Button
+                                        size="icon"
                                         className="bg-purple-600 hover:bg-purple-700"
-                                        onClick={() => handleAction(giver.id, 'Approve')} 
+                                        onClick={() => handleAction(giver.id, 'Approve')}
                                     >
                                         <Info className="h-4 w-4" />
                                     </Button>
@@ -269,22 +269,22 @@ export function ManageGivers() {
     return (
         <div className="space-y-6">
             <h2 className="text-3xl font-bold text-white">Manage Creative Accounts</h2>
-            
+
             <Card className="bg-gray-800 border-gray-700">
                 <CardHeader className="flex flex-col space-y-4">
                     <CardTitle className="text-xl text-white">Giver List</CardTitle>
-                    
+
                     {/* 💥 FILTER BAR */}
                     <div className="flex flex-col sm:flex-row gap-4">
-                        
+
                         {/* Search Input */}
                         <div className="relative flex-1 min-w-[200px]">
-                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                            <Input 
-                                placeholder="Search by name or email..." 
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                            <Input
+                                placeholder="Search by name or email..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10 bg-gray-700 border-gray-600 text-white w-full" 
+                                className="pl-10 bg-gray-700 border-gray-600 text-white w-full"
                             />
                         </div>
 
@@ -315,7 +315,7 @@ export function ManageGivers() {
                 </CardHeader>
                 <CardContent>
                     {renderContent()}
-                    
+
                     {/* 💥 PAGINATION CONTROLS */}
                     {totalItems > 0 && totalPages > 1 && (
                         <div className="flex justify-between items-center pt-4 border-t border-gray-700 mt-4">
